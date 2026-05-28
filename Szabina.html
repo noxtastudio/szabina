@@ -36,8 +36,12 @@
     padding:18px 24px;
     color:var(--ink);
     pointer-events:none;
-    transition:color .3s ease;
+    transition:color .3s ease, opacity .3s ease;
   }
+  body.story-open .mast{opacity:0;pointer-events:none}
+  body.story-open .mast .wordmark,
+  body.story-open .mast .right,
+  body.story-open .mast a{pointer-events:none}
   .mast .wordmark,
   .mast .right{
     background:transparent;
@@ -367,10 +371,56 @@
     .about .sig{font-size:32px;margin-top:20px}
     .about .about-portrait{aspect-ratio:3/4;max-height:55vh;order:-1}
     .rail{display:none}
+    /* Closing section — stack single column on mobile so headline + paragraphs aren't stuffed */
+    .closing{grid-template-columns:1fr;gap:32px;padding-top:90px;padding-bottom:60px}
+    .closing .end{font-size:clamp(40px,8vw,68px)}
+    .closing .right{font-size:17px}
+    .closing .right .sig{font-size:34px;margin-top:14px}
+    /* Gallery head — flex so the close ✕ is reliably pinned right */
     .gallery .head,.gallery .foot{padding-left:24px;padding-right:24px}
+    .gallery .head{display:flex;justify-content:space-between;align-items:center;gap:14px}
+    .gallery .head .center{display:none}
+    .gallery .head .left{flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:14px}
+    .gallery .head .left .title{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    .gallery .head .left .n{font-size:24px;flex:0 0 auto}
+    .gallery .head .right{flex:0 0 auto}
     .slider .track{padding:16px 24px;gap:14px}
     .arrow-btn{width:36px;height:36px;font-size:18px}
     .slider .edge{width:48px}
+    /* Gallery foot — arrows/dots on left, counter on right */
+    .gallery .foot{display:flex;justify-content:space-between;align-items:center;gap:14px}
+  }
+
+  /* ─── small phones ─── */
+  @media (max-width: 600px){
+    /* Mast: tighter pills + tighter unpilled state so links don't wrap */
+    .mast{padding:12px 12px}
+    .mast .wordmark,
+    .mast .right{padding:7px 12px;border-radius:18px}
+    .mast .wordmark{font-size:11px;letter-spacing:.22em}
+    .mast .right{gap:14px;font-size:10px;letter-spacing:.22em}
+    .mast .right a{white-space:nowrap}
+    /* When mast isn't framed (i.e., over About) the right's small-caps still has wide letter-spacing — bring it in too */
+    .mast .right.small-caps,
+    .mast .right .small-caps{letter-spacing:.22em;font-size:10px}
+    /* Story cover CTA pill tighter */
+    .cover .cta .open{padding:11px 18px;gap:10px}
+    /* About: ensure portrait + text both breathe */
+    .about{padding-top:80px;padding-bottom:40px;gap:24px}
+    .about h1{margin-bottom:20px}
+    /* Gallery head: drop the long title on tiny screens — number + close is enough */
+    .gallery .head{padding:18px 16px 14px;gap:12px}
+    .gallery .head .left .title{display:none}
+    .gallery .head .left .n{font-size:22px}
+    /* Close ✕ — pinned to the right edge so the dots/foot can't push it off-screen */
+    .gallery .head{position:relative}
+    .gallery .head .right{position:absolute;right:16px;top:50%;transform:translateY(-50%)}
+    .gallery .head .close{width:36px;height:36px;font-size:14px}
+    /* Foot: drop the dot rail on tiny screens (stories with 9–10 photos overflow horizontally) */
+    .gallery .foot{padding:14px 16px 20px}
+    .gallery .foot .place{display:none}
+    .gallery .foot .dots{display:none}
+    .gallery .foot .counter{font-size:22px}
   }
 
 </style>
@@ -633,6 +683,7 @@
     const wasReplacing = activeStory && activeStory !== sec;
     if (wasReplacing) closeStory(activeStory);
     sec.classList.add('open');
+    document.body.classList.add('story-open');
     activeStory = sec;
     // hydrate slide images
     sec.querySelectorAll('.slide img[data-src]').forEach(img => {
@@ -648,7 +699,10 @@
   }
   function closeStory(sec) {
     sec.classList.remove('open');
-    if (activeStory === sec) activeStory = null;
+    if (activeStory === sec) {
+      activeStory = null;
+      document.body.classList.remove('story-open');
+    }
   }
   function setCurrent(sec, idx) {
     const total = sec.querySelectorAll('.slide').length;

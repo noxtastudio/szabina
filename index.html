@@ -29,11 +29,21 @@
   .mast{
     position:fixed;top:0;left:0;right:0;z-index:100;
     display:flex;justify-content:space-between;align-items:center;
-    padding:22px 36px;color:var(--paper);
-    mix-blend-mode:difference;pointer-events:none;
+    padding:18px 24px;color:var(--paper);
+    pointer-events:none;
   }
-  .mast .wordmark{font-size:18px;letter-spacing:0.36em;text-transform:uppercase;font-weight:500;font-family:"Cormorant Garamond",serif}
-  .mast .right{display:flex;gap:28px;align-items:center;pointer-events:auto}
+  .mast .wordmark,
+  .mast .right{
+    background:rgba(10,5,0,0.45);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(250,242,224,0.12);
+    border-radius:22px;
+    padding:9px 18px;
+    pointer-events:auto;
+  }
+  .mast .wordmark{font-size:14px;letter-spacing:0.32em;text-transform:uppercase;font-weight:500;font-family:"Cormorant Garamond",serif;cursor:pointer;transition:opacity .2s}
+  .mast .wordmark:hover{opacity:.6}
+  .mast .right{display:flex;gap:22px;align-items:center}
   .mast a{transition:opacity .2s}
   .mast a:hover{opacity:.6}
 
@@ -245,12 +255,48 @@
     .cover .text{grid-template-columns:1fr;padding:32px 24px 40px}
     .cover .cta{align-items:flex-start;text-align:left}
     .gallery .head,.gallery .foot{padding-left:24px;padding-right:24px}
-    .gallery .head{grid-template-columns:1fr auto;gap:16px}
+    .gallery .head{display:flex;justify-content:space-between;align-items:center;gap:14px}
     .gallery .head .center{display:none}
+    .gallery .head .right{flex:0 0 auto}
     .slider .track{padding:16px 24px;gap:14px}
     .arrow-btn{width:36px;height:36px;font-size:18px}
     .slider .edge{width:48px}
     .progress{left:20px;bottom:18px}
+    /* Gallery head — close ✕ always pinned right */
+    .gallery .head .left{flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:14px}
+    .gallery .head .left .title{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    .gallery .head .left .n{font-size:24px;flex:0 0 auto}
+    /* Gallery foot — arrows/dots on left, counter on right */
+    .gallery .foot{display:flex;justify-content:space-between;align-items:center;gap:14px}
+  }
+
+  /* ─── small phones ─── */
+  @media (max-width: 600px){
+    /* Tighter mast pills so they don't wrap or eat the screen */
+    .mast{padding:12px 12px}
+    .mast .wordmark,
+    .mast .right{padding:7px 12px;border-radius:18px}
+    .mast .wordmark{font-size:11px;letter-spacing:.22em}
+    .mast .right{gap:14px;font-size:10px;letter-spacing:.22em}
+    .mast .right a{white-space:nowrap}
+    /* Touch users swipe; the bouncing chevron + label collides with the CTA on phones */
+    .scroll-hint{display:none}
+    /* CTA pill — shrink a notch */
+    .cover .cta .open{padding:11px 18px;gap:10px}
+    .cover .text{padding:24px 18px 28px}
+    /* Gallery head: only the roman numeral + close on tiny screens */
+    .gallery .head{padding:18px 16px 14px;gap:12px}
+    .gallery .head .left .title{display:none}
+    .gallery .head .left .n{font-size:22px}
+    /* Close ✕ — pinned to the right edge so the dots/foot can't push it off-screen */
+    .gallery .head{position:relative}
+    .gallery .head .right{position:absolute;right:16px;top:50%;transform:translateY(-50%)}
+    .gallery .head .close{width:36px;height:36px;font-size:14px}
+    /* Foot: drop the dot rail on tiny screens (stories with 9–10 photos overflow horizontally) */
+    .gallery .foot{padding:14px 16px 20px}
+    .gallery .foot .place{display:none}
+    .gallery .foot .dots{display:none}
+    .gallery .foot .counter{font-size:22px}
   }
 </style>
 </head>
@@ -576,6 +622,9 @@
   }
 
   document.getElementById('scroll-hint').addEventListener('click', () => goToStory(storyIdx + 1, 'next'));
+  document.querySelector('.mast .wordmark').addEventListener('click', () => {
+    if (storyIdx !== 0) goToStory(0, 'prev');
+  });
 
   // initial render — VII pinned first
   renderCover(order[0], true);
