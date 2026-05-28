@@ -40,14 +40,17 @@
   /* ───────── Hero (fullscreen cover) ───────── */
   .hero{position:fixed;inset:0;overflow:hidden;background:#0a0500}
 
-  .cover{position:absolute;inset:0;cursor:pointer}
+  .cover{position:absolute;inset:0;cursor:pointer;overflow:hidden}
+
   .cover .photo{
     position:absolute;inset:0;
     background-size:cover;background-position:center;
-    transform:scale(1.02);
-    transition:opacity .45s ease, transform 1.4s cubic-bezier(.2,.6,.2,1);
+    opacity:0;
+    transform:translateY(0);
+    will-change:transform, opacity;
   }
-  .cover:hover .photo{transform:scale(1.04)}
+  /* Active layer: visible, at rest */
+  .cover .photo.on{opacity:1}
   .cover .veil{
     position:absolute;inset:0;
     background:linear-gradient(180deg, rgba(10,5,0,0.4) 0%, rgba(10,5,0,0.05) 22%, rgba(10,5,0,0) 48%, rgba(10,5,0,0.88) 100%);
@@ -60,10 +63,9 @@
   }
   .cover .text{
     position:absolute;left:0;right:0;bottom:0;
-    padding:48px 60px 56px 140px;color:var(--paper);
+    padding:48px 60px 84px;color:var(--paper);
     display:grid;grid-template-columns:1fr auto;gap:48px;align-items:end;
     pointer-events:none;
-    transition:opacity .45s ease;
   }
   .cover .meta{display:flex;flex-direction:column;gap:18px;max-width:62ch}
   .cover .meta .row{display:flex;gap:18px;align-items:center;color:rgba(250,242,224,0.78);flex-wrap:wrap}
@@ -87,36 +89,83 @@
   .cover .cta .open .arrow{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:24px;line-height:1}
   .cover .cta .open span:first-child{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.22em;font-size:11px}
 
-  /* cover transition (when cycling stories) */
-  .cover.changing .photo,
-  .cover.changing .text{opacity:0}
-
-  /* ───────── Story nav arrows ───────── */
-  .nav-arrow{
-    position:fixed;top:50%;z-index:50;
-    width:60px;height:60px;border-radius:50%;
-    background:rgba(10,5,0,0.35);backdrop-filter:blur(8px);
-    border:1px solid rgba(250,242,224,0.28);color:var(--paper);
-    font-family:"Cormorant Garamond",serif;font-style:italic;font-size:30px;line-height:1;
-    display:flex;align-items:center;justify-content:center;
-    transition:background .2s, color .2s, border-color .2s, opacity .3s;
-    transform:translateY(-50%);
+  /* ── Cover transition: line-mask reveal + slide ── */
+  .cover .meta h2,
+  .cover .meta p{
+    overflow:hidden;
   }
-  .nav-arrow:hover{background:rgba(250,242,224,0.95);color:var(--ink);border-color:var(--paper)}
-  .nav-arrow.prev{left:32px}
-  .nav-arrow.next{right:32px}
-  body.gallery-open .nav-arrow,
+  .cover .meta .l-mask{display:block;overflow:hidden;padding-bottom:.22em}
+  .cover .meta .l-inner{
+    display:block;
+    transform:translateY(0);
+    transition: transform 1s cubic-bezier(.5,0,.18,1);
+    transition-delay: calc(var(--i, 0) * .075s);
+    will-change: transform;
+  }
+  .cover .meta .row,
+  .cover .cta{
+    transition: transform .8s cubic-bezier(.5,0,.18,1), opacity .55s ease;
+    will-change: transform, opacity;
+  }
+  .cover .meta .row{transition-delay:0s}
+  .cover .cta     {transition-delay:.05s}
+
+  /* OUT — text wipes out the way you're scrolling */
+  .cover.t-out-next .meta .l-inner{transform:translateY(-110%)}
+  .cover.t-out-prev .meta .l-inner{transform:translateY(110%)}
+  .cover.t-out-next .meta .row,
+  .cover.t-out-next .cta{transform:translateY(-50px);opacity:0}
+  .cover.t-out-prev .meta .row,
+  .cover.t-out-prev .cta{transform:translateY(50px);opacity:0}
+
+  /* PREP — snap to the opposite side instantly (no transition), so removing the class triggers the slide-in */
+  .cover.t-in-prep-next .meta .l-inner{transform:translateY(110%);transition:none}
+  .cover.t-in-prep-prev .meta .l-inner{transform:translateY(-110%);transition:none}
+  .cover.t-in-prep-next .meta .row,
+  .cover.t-in-prep-next .cta{transform:translateY(50px);opacity:0;transition:none}
+  .cover.t-in-prep-prev .meta .row,
+  .cover.t-in-prep-prev .cta{transform:translateY(-50px);opacity:0;transition:none}
+
+  /* ───────── Scroll hint (bottom-center) ───────── */
+  .scroll-hint{
+    position:fixed;left:50%;bottom:22px;
+    transform:translateX(-50%);z-index:50;
+    display:flex;flex-direction:column;align-items:center;gap:8px;
+    padding:6px 10px;background:transparent;border:0;cursor:pointer;
+    color:var(--paper);opacity:.75;
+    transition:opacity .25s ease;
+    text-shadow:0 1px 6px rgba(0,0,0,0.55);
+  }
+  .scroll-hint:hover{opacity:1}
+  .scroll-hint .lbl{
+    font-family:"IBM Plex Mono",monospace;text-transform:uppercase;
+    letter-spacing:.28em;font-size:10px;
+  }
+  .scroll-hint svg{
+    width:14px;height:20px;
+    animation: scroll-bounce 2.2s ease-in-out infinite;
+    filter:drop-shadow(0 1px 4px rgba(0,0,0,0.5));
+  }
+  @keyframes scroll-bounce{
+    0%, 100%{transform: translateY(0); opacity:.9}
+    50%     {transform: translateY(6px); opacity:.55}
+  }
+  body.gallery-open .scroll-hint,
   body.gallery-open .mast{opacity:0;pointer-events:none;transition:opacity .3s}
 
   /* ───────── Gallery overlay ───────── */
   .gallery{
-    position:fixed;inset:0;z-index:80;
+    position:fixed;inset:0;z-index:120;
     background:#0a0500;color:var(--paper);
     display:grid;grid-template-rows:auto 1fr auto;
     opacity:0;pointer-events:none;
     transition:opacity .35s ease;
   }
   body.gallery-open .gallery{opacity:1;pointer-events:auto}
+  /* Belt-and-suspenders: any child of the hidden mast must also stop catching clicks */
+  body.gallery-open .mast .wordmark,
+  body.gallery-open .mast .right,
+  body.gallery-open .mast a{ pointer-events:none }
 
   .gallery .head{
     display:grid;grid-template-columns:auto 1fr auto;gap:36px;align-items:center;
@@ -195,9 +244,6 @@
   @media (max-width: 900px){
     .cover .text{grid-template-columns:1fr;padding:32px 24px 40px}
     .cover .cta{align-items:flex-start;text-align:left}
-    .nav-arrow{width:48px;height:48px;font-size:24px}
-    .nav-arrow.prev{left:14px}
-    .nav-arrow.next{right:14px}
     .gallery .head,.gallery .foot{padding-left:24px;padding-right:24px}
     .gallery .head{grid-template-columns:1fr auto;gap:16px}
     .gallery .head .center{display:none}
@@ -213,13 +259,15 @@
 <header class="mast">
   <div class="wordmark">Szabina</div>
   <div class="right small-caps">
+    <a href="Szabina.html">My Story</a>
     <a href="https://instagram.com/szabina.bks" target="_blank" rel="noopener">@szabina.bks ↗</a>
   </div>
 </header>
 
 <main class="hero">
   <article class="cover" id="cover">
-    <div class="photo" id="cover-photo"></div>
+    <div class="photo" id="photo-a"></div>
+    <div class="photo" id="photo-b"></div>
     <div class="veil"></div>
     <div class="veil-left"></div>
     <div class="text">
@@ -243,8 +291,12 @@
     </div>
   </article>
 
-  <button class="nav-arrow prev" id="nav-prev" aria-label="Previous story">←</button>
-  <button class="nav-arrow next" id="nav-next" aria-label="Next story">→</button>
+  <button class="scroll-hint" id="scroll-hint" aria-label="Next story">
+    <span class="lbl">Scroll</span>
+    <svg viewBox="0 0 14 20" fill="none" aria-hidden="true">
+      <path d="M7 0V18M7 18L1 12M7 18L13 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
 
   <div class="progress" id="progress">
     <span id="prog-cur">01</span>
@@ -400,7 +452,10 @@
 
   // ─── Cover render ───────────────────────────────────────────────────
   const cover = document.getElementById('cover');
-  const coverPhoto = document.getElementById('cover-photo');
+  const photoLayers = [document.getElementById('photo-a'), document.getElementById('photo-b')];
+  let activeLayerIdx = 0;
+  let isTransitioning = false;
+
   const metaNum = document.getElementById('meta-num');
   const metaPlace = document.getElementById('meta-place');
   const metaDate = document.getElementById('meta-date');
@@ -411,35 +466,94 @@
   const progTot = document.getElementById('prog-tot');
   progTot.textContent = String(order.length).padStart(2, '0');
 
+  const EXIT_MS  = 880;    // wait for text wipe + photo slide to mostly complete before swap
+  const ENTER_MS = 960;    // mask + slide back in
+  const LOCK_MS  = EXIT_MS + ENTER_MS + 100;
+
   function applyCoverContent(story) {
     metaNum.textContent = story.num;
     metaPlace.innerHTML = story.place;
     metaDate.innerHTML = story.date;
-    metaTitle.innerHTML = `${story.title[0]}<br>${story.title[1]}`;
-    metaCaption.innerHTML = story.caption;
+    // Title — each line gets its own mask + staggered --i (controls transition-delay)
+    metaTitle.innerHTML = `
+      <span class="l-mask"><span class="l-inner" style="--i:0">${story.title[0]}</span></span>
+      <span class="l-mask"><span class="l-inner" style="--i:1">${story.title[1]}</span></span>`;
+    // Caption — single mask line, comes in after the title lines
+    metaCaption.innerHTML = `<span class="l-mask"><span class="l-inner" style="--i:2">${story.caption}</span></span>`;
     openLabel.textContent = `View story · ${story.count} pictures`;
     progCur.textContent = String(storyIdx + 1).padStart(2, '0');
   }
 
-  function renderCover(story, immediate) {
+  const PHOTO_EASE = 'cubic-bezier(.5, 0, .18, 1)';
+  const PHOTO_MS   = 1200;
+
+  function renderCover(story, immediate, direction) {
     if (immediate) {
-      coverPhoto.style.backgroundImage = `url('images/${story.id}/${story.cover}.jpg')`;
+      const p = photoLayers[activeLayerIdx];
+      p.style.backgroundImage = `url('images/${story.id}/${story.cover}.jpg')`;
+      p.style.transform = 'translateY(0)';
+      p.style.opacity = '';
+      p.classList.add('on');
       applyCoverContent(story);
       preloadNeighbors();
       return;
     }
-    cover.classList.add('changing');
-    const img = new Image();
-    const swap = () => {
-      coverPhoto.style.backgroundImage = `url('${img.src}')`;
-      applyCoverContent(story);
-      // small rAF to ensure the new background paints before fade-in
-      requestAnimationFrame(() => cover.classList.remove('changing'));
-      preloadNeighbors();
+
+    isTransitioning = true;
+    const dir = direction === 'prev' ? 'prev' : 'next';
+    const isNext = dir === 'next';
+    const outClass  = 't-out-'  + dir;
+    const prepClass = 't-in-prep-' + dir;
+    const oldPhoto = photoLayers[activeLayerIdx];
+    const newPhoto = photoLayers[1 - activeLayerIdx];
+
+    cover.classList.add(outClass);
+
+    const imgUrl = `images/${story.id}/${story.cover}.jpg`;
+
+    const runPhotoSlide = () => {
+      // Set new photo's background and park it off-screen on the incoming side
+      newPhoto.style.backgroundImage = `url('${imgUrl}')`;
+      newPhoto.style.transition = 'none';
+      newPhoto.style.transform  = `translateY(${isNext ? '100%' : '-100%'})`;
+      newPhoto.style.opacity    = '1';
+      newPhoto.classList.add('on');
+      void newPhoto.offsetHeight; // flush
+
+      // Animate both photos — new slides into place, old slides out the opposite side
+      newPhoto.style.transition = `transform ${PHOTO_MS}ms ${PHOTO_EASE}`;
+      newPhoto.style.transform  = 'translateY(0)';
+      oldPhoto.style.transition = `transform ${PHOTO_MS}ms ${PHOTO_EASE}`;
+      oldPhoto.style.transform  = `translateY(${isNext ? '-100%' : '100%'})`;
     };
-    img.onload = () => setTimeout(swap, 220);
-    img.onerror = () => setTimeout(swap, 220);
-    img.src = `images/${story.id}/${story.cover}.jpg`;
+
+    const probe = new Image();
+    let started = false;
+    const fire = () => { if (!started) { started = true; runPhotoSlide(); } };
+    probe.onload = probe.onerror = fire;
+    probe.src = imgUrl;
+    if (probe.complete && probe.naturalWidth > 0) fire();
+
+    // Phase 2 — at EXIT_MS, swap text content and prep enter position
+    setTimeout(() => {
+      applyCoverContent(story);
+      cover.classList.remove(outClass);
+      cover.classList.add(prepClass);
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        cover.classList.remove(prepClass);
+      }));
+      preloadNeighbors();
+    }, EXIT_MS);
+
+    // Phase 3 — reset the now-offscreen old photo and unlock
+    setTimeout(() => {
+      oldPhoto.classList.remove('on');
+      oldPhoto.style.transition = 'none';
+      oldPhoto.style.transform  = 'translateY(0)';
+      oldPhoto.style.opacity    = '0';
+      activeLayerIdx = 1 - activeLayerIdx;
+      isTransitioning = false;
+    }, LOCK_MS);
   }
 
   function preloadNeighbors() {
@@ -451,17 +565,59 @@
     });
   }
 
-  function goToStory(idx) {
-    if (idx === storyIdx) return;
-    storyIdx = (idx + order.length) % order.length;
-    renderCover(order[storyIdx]);
+  function goToStory(idx, direction) {
+    if (isTransitioning) return;
+    const len = order.length;
+    const newIdx = ((idx % len) + len) % len;
+    if (newIdx === storyIdx) return;
+    if (!direction) direction = (newIdx > storyIdx) ? 'next' : 'prev';
+    storyIdx = newIdx;
+    renderCover(order[storyIdx], false, direction);
   }
 
-  document.getElementById('nav-prev').addEventListener('click', () => goToStory(storyIdx - 1));
-  document.getElementById('nav-next').addEventListener('click', () => goToStory(storyIdx + 1));
+  document.getElementById('scroll-hint').addEventListener('click', () => goToStory(storyIdx + 1, 'next'));
 
   // initial render — VII pinned first
   renderCover(order[0], true);
+
+  // ─── Wheel navigation (one story per gesture, vertical) ─────────────
+  (function setupWheelNav(){
+    const QUIET_MS = 220;
+    let gestureActive = false;
+    let endTimer;
+    window.addEventListener('wheel', (e) => {
+      if (Math.abs(e.deltaY) < 5) return;
+      if (document.body.classList.contains('gallery-open')) return; // gallery has its own scroll
+      e.preventDefault();
+      clearTimeout(endTimer);
+      endTimer = setTimeout(() => { gestureActive = false; }, QUIET_MS);
+      if (gestureActive || isTransitioning) return;
+      gestureActive = true;
+      if (e.deltaY > 0) goToStory(storyIdx + 1, 'next');
+      else              goToStory(storyIdx - 1, 'prev');
+    }, { passive: false });
+  })();
+
+  // ─── Touch swipe (mobile) ───────────────────────────────────────────
+  (function setupTouchNav(){
+    let startY = 0;
+    let active = false;
+    window.addEventListener('touchstart', (e) => {
+      if (document.body.classList.contains('gallery-open')) return;
+      startY = e.touches[0].clientY;
+      active = true;
+    }, { passive: true });
+    window.addEventListener('touchend', (e) => {
+      if (!active) return;
+      active = false;
+      const endY = (e.changedTouches[0] || {}).clientY ?? startY;
+      const delta = startY - endY;
+      if (Math.abs(delta) < 60) return;
+      if (isTransitioning) return;
+      if (delta > 0) goToStory(storyIdx + 1, 'next');
+      else           goToStory(storyIdx - 1, 'prev');
+    }, { passive: true });
+  })();
 
   // ─── Gallery (horizontal slider) ────────────────────────────────────
   const gallery = document.getElementById('gallery');
@@ -575,8 +731,8 @@
       else if (e.key === 'ArrowLeft') goToSlide(curSlide - 1);
       else if (e.key === 'Escape') closeGallery();
     } else {
-      if (e.key === 'ArrowRight') goToStory(storyIdx + 1);
-      else if (e.key === 'ArrowLeft') goToStory(storyIdx - 1);
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') goToStory(storyIdx + 1, 'next');
+      else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') goToStory(storyIdx - 1, 'prev');
       else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGallery(); }
     }
   });
