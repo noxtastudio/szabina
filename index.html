@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Szabina — a field journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f3e8d2;
+    --paper:#faf2e0;
+    --ink:#1a0c05;
+    --ink-soft:#3b251a;
+    --muted:#8b7866;
+    --terra:#b8401b;
+    --terra-deep:#7a2a10;
+    --shadow:0 30px 60px -20px rgba(26,12,5,0.55);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#0a0500;color:var(--paper);font-family:"Cormorant Garamond",Georgia,serif;font-weight:400;-webkit-font-smoothing:antialiased;overflow:hidden}
+  img{display:block;max-width:100%}
+  a{color:inherit;text-decoration:none}
+  button{background:none;border:0;cursor:pointer;color:inherit;font-family:inherit}
+  .small-caps{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:0.28em;font-size:11px;font-weight:400}
+
+  /* ───────── Masthead ───────── */
+  .mast{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:22px 36px;color:var(--paper);
+    mix-blend-mode:difference;pointer-events:none;
+  }
+  .mast .wordmark{font-size:18px;letter-spacing:0.36em;text-transform:uppercase;font-weight:500;font-family:"Cormorant Garamond",serif}
+  .mast .right{display:flex;gap:28px;align-items:center;pointer-events:auto}
+  .mast a{transition:opacity .2s}
+  .mast a:hover{opacity:.6}
+
+  /* ───────── Hero (fullscreen cover) ───────── */
+  .hero{position:fixed;inset:0;overflow:hidden;background:#0a0500}
+
+  .cover{position:absolute;inset:0;cursor:pointer}
+  .cover .photo{
+    position:absolute;inset:0;
+    background-size:cover;background-position:center;
+    transform:scale(1.02);
+    transition:opacity .45s ease, transform 1.4s cubic-bezier(.2,.6,.2,1);
+  }
+  .cover:hover .photo{transform:scale(1.04)}
+  .cover .veil{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(10,5,0,0.4) 0%, rgba(10,5,0,0.05) 22%, rgba(10,5,0,0) 48%, rgba(10,5,0,0.88) 100%);
+    pointer-events:none;
+  }
+  .cover .veil-left{
+    position:absolute;inset:0;
+    background:linear-gradient(90deg, rgba(10,5,0,0.6) 0%, rgba(10,5,0,0.18) 40%, rgba(10,5,0,0) 62%);
+    pointer-events:none;
+  }
+  .cover .text{
+    position:absolute;left:0;right:0;bottom:0;
+    padding:48px 60px 56px 140px;color:var(--paper);
+    display:grid;grid-template-columns:1fr auto;gap:48px;align-items:end;
+    pointer-events:none;
+    transition:opacity .45s ease;
+  }
+  .cover .meta{display:flex;flex-direction:column;gap:18px;max-width:62ch}
+  .cover .meta .row{display:flex;gap:18px;align-items:center;color:rgba(250,242,224,0.78);flex-wrap:wrap}
+  .cover .meta .row .num{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:30px;color:var(--paper);line-height:1}
+  .cover .meta .row .dot{width:5px;height:5px;background:var(--terra);border-radius:50%;display:inline-block;flex:0 0 5px}
+  .cover .meta h2{
+    font-weight:300;font-size:clamp(40px,6vw,96px);line-height:0.98;letter-spacing:-0.018em;color:var(--paper);
+    text-shadow:0 2px 28px rgba(0,0,0,0.7), 0 0 14px rgba(0,0,0,0.5);max-width:18ch;
+  }
+  .cover .meta h2 em{font-style:italic;font-weight:300;color:#ffb88c}
+  .cover .meta p{font-size:clamp(17px,1.3vw,21px);line-height:1.5;color:rgba(250,242,224,0.92);font-style:italic;max-width:46ch;text-shadow:0 1px 14px rgba(0,0,0,0.7), 0 0 10px rgba(0,0,0,0.5)}
+  .cover .meta .row{text-shadow:0 1px 10px rgba(0,0,0,0.6)}
+  .cover .cta{display:flex;flex-direction:column;align-items:flex-end;gap:14px;color:var(--paper);text-align:right;pointer-events:auto}
+  .cover .cta .open{
+    display:flex;align-items:center;gap:14px;padding:14px 22px;
+    border:1px solid rgba(250,242,224,0.5);border-radius:999px;
+    background:rgba(10,5,0,0.18);backdrop-filter:blur(4px);
+    transition:all .2s;
+  }
+  .cover .cta .open:hover{background:rgba(250,242,224,0.95);color:var(--ink);border-color:var(--paper)}
+  .cover .cta .open .arrow{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:24px;line-height:1}
+  .cover .cta .open span:first-child{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.22em;font-size:11px}
+
+  /* cover transition (when cycling stories) */
+  .cover.changing .photo,
+  .cover.changing .text{opacity:0}
+
+  /* ───────── Story nav arrows ───────── */
+  .nav-arrow{
+    position:fixed;top:50%;z-index:50;
+    width:60px;height:60px;border-radius:50%;
+    background:rgba(10,5,0,0.35);backdrop-filter:blur(8px);
+    border:1px solid rgba(250,242,224,0.28);color:var(--paper);
+    font-family:"Cormorant Garamond",serif;font-style:italic;font-size:30px;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .2s, color .2s, border-color .2s, opacity .3s;
+    transform:translateY(-50%);
+  }
+  .nav-arrow:hover{background:rgba(250,242,224,0.95);color:var(--ink);border-color:var(--paper)}
+  .nav-arrow.prev{left:32px}
+  .nav-arrow.next{right:32px}
+  body.gallery-open .nav-arrow,
+  body.gallery-open .mast{opacity:0;pointer-events:none;transition:opacity .3s}
+
+  /* ───────── Gallery overlay ───────── */
+  .gallery{
+    position:fixed;inset:0;z-index:80;
+    background:#0a0500;color:var(--paper);
+    display:grid;grid-template-rows:auto 1fr auto;
+    opacity:0;pointer-events:none;
+    transition:opacity .35s ease;
+  }
+  body.gallery-open .gallery{opacity:1;pointer-events:auto}
+
+  .gallery .head{
+    display:grid;grid-template-columns:auto 1fr auto;gap:36px;align-items:center;
+    padding:28px 48px 20px;
+    border-bottom:1px solid rgba(250,242,224,0.12);
+  }
+  .gallery .head .left{display:flex;gap:20px;align-items:baseline}
+  .gallery .head .left .n{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:32px;color:var(--terra);line-height:1}
+  .gallery .head .left .title{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:22px;letter-spacing:-0.005em}
+  .gallery .head .center{text-align:center;color:rgba(250,242,224,0.6)}
+  .gallery .head .right{display:flex;gap:16px;align-items:center}
+  .gallery .head .close{
+    width:42px;height:42px;border:1px solid rgba(250,242,224,0.3);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;color:var(--paper);
+    font-size:18px;transition:all .18s;
+  }
+  .gallery .head .close:hover{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+
+  /* slider — horizontal scroller */
+  .slider{position:relative;overflow:hidden;min-height:0}
+  .slider .track{
+    display:flex;height:100%;
+    gap:20px;
+    padding:24px 48px;
+    overflow-x:auto;overflow-y:hidden;
+    scroll-behavior:smooth;
+    scroll-snap-type:x mandatory;
+    scrollbar-width:none;-ms-overflow-style:none;
+  }
+  .slider .track::-webkit-scrollbar{display:none}
+  .slider .slide{flex:0 0 auto;height:100%;display:flex;align-items:center;justify-content:center;scroll-snap-align:center}
+  .slider .slide .frame{height:100%;display:flex;align-items:center;justify-content:center}
+  .slider .slide img{height:100%;width:auto;max-width:none;object-fit:contain;box-shadow:var(--shadow)}
+
+  .slider .edge{position:absolute;top:0;bottom:0;width:80px;pointer-events:none;transition:opacity .3s;z-index:2}
+  .slider .edge-left{left:0;background:linear-gradient(90deg,#0a0500 0%,rgba(10,5,0,0) 100%)}
+  .slider .edge-right{right:0;background:linear-gradient(270deg,#0a0500 0%,rgba(10,5,0,0) 100%)}
+  .slider .edge.hidden{opacity:0}
+
+  .arrow-btn{
+    width:40px;height:40px;border-radius:50%;
+    background:rgba(250,242,224,0.06);border:1px solid rgba(250,242,224,0.22);
+    color:var(--paper);font-family:"Cormorant Garamond",serif;font-style:italic;font-size:22px;
+    display:flex;align-items:center;justify-content:center;transition:all .2s;
+  }
+  .arrow-btn:hover{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+  .arrow-btn:disabled{opacity:.25;cursor:not-allowed}
+  .arrow-btn:disabled:hover{background:rgba(250,242,224,0.06);color:var(--paper);border-color:rgba(250,242,224,0.22)}
+
+  .gallery .foot{
+    padding:18px 48px 28px;
+    display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px;
+    border-top:1px solid rgba(250,242,224,0.12);
+    color:rgba(250,242,224,0.65);
+  }
+  .gallery .foot .counter{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:32px;color:var(--paper);text-align:center;line-height:1}
+  .gallery .foot .counter .of{color:rgba(250,242,224,0.4);margin:0 6px}
+  .gallery .foot .left-group{display:flex;gap:20px;align-items:center;justify-self:start}
+  .gallery .foot .nav-arrows{display:flex;gap:8px}
+  .gallery .foot .dots{display:flex;gap:8px;align-items:center}
+  .gallery .foot .dot{width:24px;height:2px;background:rgba(250,242,224,0.18);transition:all .25s;cursor:pointer}
+  .gallery .foot .dot.active{background:var(--terra);width:48px}
+  .gallery .foot .place{justify-self:end;font-style:italic;font-size:16px;font-family:"Cormorant Garamond",serif}
+
+  /* progress chip — shows which story # in the random order */
+  .progress{
+    position:fixed;left:36px;bottom:32px;z-index:55;
+    color:var(--paper);mix-blend-mode:difference;
+    font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.28em;font-size:11px;
+    display:flex;align-items:center;gap:12px;
+    transition:opacity .3s;
+  }
+  .progress .line{width:42px;height:1px;background:currentColor;opacity:.5}
+  body.gallery-open .progress{opacity:0;pointer-events:none}
+
+  @media (max-width: 900px){
+    .cover .text{grid-template-columns:1fr;padding:32px 24px 40px}
+    .cover .cta{align-items:flex-start;text-align:left}
+    .nav-arrow{width:48px;height:48px;font-size:24px}
+    .nav-arrow.prev{left:14px}
+    .nav-arrow.next{right:14px}
+    .gallery .head,.gallery .foot{padding-left:24px;padding-right:24px}
+    .gallery .head{grid-template-columns:1fr auto;gap:16px}
+    .gallery .head .center{display:none}
+    .slider .track{padding:16px 24px;gap:14px}
+    .arrow-btn{width:36px;height:36px;font-size:18px}
+    .slider .edge{width:48px}
+    .progress{left:20px;bottom:18px}
+  }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="wordmark">Szabina</div>
+  <div class="right small-caps">
+    <a href="https://instagram.com/szabina.bks" target="_blank" rel="noopener">@szabina.bks ↗</a>
+  </div>
+</header>
+
+<main class="hero">
+  <article class="cover" id="cover">
+    <div class="photo" id="cover-photo"></div>
+    <div class="veil"></div>
+    <div class="veil-left"></div>
+    <div class="text">
+      <div class="meta">
+        <div class="row">
+          <span class="num" id="meta-num"></span>
+          <span class="dot"></span>
+          <span class="small-caps" id="meta-place"></span>
+          <span class="dot"></span>
+          <span class="small-caps" id="meta-date"></span>
+        </div>
+        <h2 id="meta-title"></h2>
+        <p id="meta-caption"></p>
+      </div>
+      <div class="cta">
+        <button class="open" id="open-btn">
+          <span id="open-label">View story</span>
+          <span class="arrow">→</span>
+        </button>
+      </div>
+    </div>
+  </article>
+
+  <button class="nav-arrow prev" id="nav-prev" aria-label="Previous story">←</button>
+  <button class="nav-arrow next" id="nav-next" aria-label="Next story">→</button>
+
+  <div class="progress" id="progress">
+    <span id="prog-cur">01</span>
+    <span class="line"></span>
+    <span id="prog-tot">12</span>
+  </div>
+</main>
+
+<section class="gallery" id="gallery">
+  <div class="head">
+    <div class="left">
+      <span class="n" id="g-num"></span>
+      <span class="title" id="g-title"></span>
+    </div>
+    <div class="center small-caps" id="g-meta"></div>
+    <div class="right">
+      <button class="close" id="close-btn" aria-label="Close">✕</button>
+    </div>
+  </div>
+  <div class="slider" id="slider">
+    <div class="track" id="track"></div>
+    <div class="edge edge-left hidden"></div>
+    <div class="edge edge-right"></div>
+  </div>
+  <div class="foot">
+    <div class="left-group">
+      <div class="nav-arrows">
+        <button class="arrow-btn prev" id="g-prev" aria-label="Previous">←</button>
+        <button class="arrow-btn next" id="g-next" aria-label="Next">→</button>
+      </div>
+      <div class="dots" id="g-dots"></div>
+    </div>
+    <div class="counter"><span class="cur" id="g-cur">1</span><span class="of">/</span><span class="tot" id="g-tot"></span></div>
+    <div class="place" id="g-place"></div>
+  </div>
+</section>
+
+<script>
+  // ─── Story data ─────────────────────────────────────────────────────
+  const STORIES = [
+    {
+      id:"s01", num:"I",
+      cover:1, count:8, date:"19 · VII · 25",
+      place:"Monument Valley · Utah · Arizona",
+      title:["The highway that wouldn&rsquo;t", "<em>stop running</em>."],
+      caption:"A sandstone spire holds the last of the day. The road that brought me here was named, in the end, by a man who simply would not stop running &mdash; and I understood him better than I expected to.",
+      shortPlace:"Monument Valley"
+    },
+    {
+      id:"s02", num:"II",
+      cover:1, count:9, date:"20 · VII · 25",
+      place:"Death Valley · California",
+      title:["Below the sea,", "<em>above</em> the sky."],
+      caption:"This place earned its name. Below sea level, above the clouds, nothing in between except the heat and a few honest thoughts about endings.",
+      shortPlace:"Death Valley"
+    },
+    {
+      id:"s03", num:"III",
+      cover:1, count:8, date:"21 · VII · 25",
+      place:"Vermilion Cliffs · Arizona",
+      title:["Please never", "<em>find me</em>."],
+      caption:"I&rsquo;m going to hide somewhere in Arizona. There are folds in the red rock big enough to lose a life inside of, and most days that sounds like an offer worth considering.",
+      shortPlace:"Arizona"
+    },
+    {
+      id:"s04", num:"IV",
+      cover:1, count:8, date:"22 · VII · 25",
+      place:"Grand Canyon · South Kaibab Trail",
+      title:["The <em>biggest</em>", "of all."],
+      caption:"No photograph survives this place. You stand at the rim and the scale rearranges your idea of what a hole in the earth can be.",
+      shortPlace:"Grand Canyon"
+    },
+    {
+      id:"s05", num:"V",
+      cover:1, count:9, date:"23 · VII · 25",
+      place:"Upper Antelope Canyon · Page, AZ",
+      title:["Is <em>this</em>", "even real."],
+      caption:"The walls move like fabric. The light arrives once a day and the rest is patience. Solo&#8209;traveller souls share looks and ask nothing.",
+      shortPlace:"Antelope Canyon"
+    },
+    {
+      id:"s06", num:"VI",
+      cover:1, count:9, date:"25 · VII · 25",
+      place:"Zion Canyon · Utah",
+      title:["On the way to", "<em>Angels Landing</em>."],
+      caption:"Nature never disappoints, at least not in Utah. The trail folds itself into the cliff like a question being asked over and over, and the answer is &mdash; keep climbing.",
+      shortPlace:"Zion"
+    },
+    {
+      id:"s07", num:"VII",
+      cover:1, count:6, date:"27 · VII · 25",
+      place:"Sequoia National Park · California",
+      title:["Twenty&#8209;nine, beside", "<em>two thousand</em>."],
+      caption:"Twenty-nine years doesn&rsquo;t feel like a lot when you&rsquo;re standing next to ladies who were here for two thousand. The forest does not console you so much as quietly correct your sense of proportion.",
+      shortPlace:"Sequoia"
+    },
+    {
+      id:"s08", num:"VIII",
+      cover:1, count:3, date:"30 · VII · 25",
+      place:"Horseshoe Bend · 04:30",
+      title:["Could not", "<em>sleep</em>."],
+      caption:"4:30 AM, could not sleep. 5:21 AM, no sun today. 5:25 AM, sun left the chat. A short obituary for a morning that almost happened.",
+      shortPlace:"Sleep?"
+    },
+    {
+      id:"s09", num:"IX",
+      cover:1, count:3, date:"01 · VIII · 25",
+      place:"Sequoia, again · California",
+      title:["A random", "<em>blessing</em>."],
+      caption:"A random blessing on the way out of the woods. Love ya, golden hour. We&rsquo;ll meet again, probably when I&rsquo;ve given up on you.",
+      shortPlace:"Golden hour"
+    },
+    {
+      id:"s10", num:"X",
+      cover:1, count:10, date:"02 · VIII · 25",
+      place:"Vernal &amp; Nevada Falls · Yosemite",
+      title:["Memorial Day,", "<em>Mist Trail</em>."],
+      caption:"The Memorial Day crowd got me. The bears did not. Halfway up I forgot what I was here for and let the spray decide.",
+      shortPlace:"Yosemite"
+    },
+    {
+      id:"s11", num:"XI",
+      cover:1, count:6, date:"03 · VIII · 25",
+      place:"MXGP of Flanders · Lommelwood, BE",
+      title:["My favorite", "<em>energy</em>."],
+      caption:"Welcome to Lommelwood. Two-stroke, four-stroke, sunburn, beer, the kind of cheering you feel through your shoes. A reminder that beauty doesn&rsquo;t have to be quiet to be holy.",
+      shortPlace:"Lommelwood"
+    },
+    {
+      id:"s12", num:"XII",
+      cover:1, count:9, date:"05 · VIII · 25",
+      place:"Santa Monica Pier · California",
+      title:["Pacific Park,", "<em>no one</em> awake."],
+      caption:"Early morning, no crowd. Fresh air and a rising sun at one of the most iconic spots in the world. Briefly, the carousel was mine.",
+      shortPlace:"Santa Monica"
+    },
+  ];
+
+  // ─── Random order, VII pinned first ─────────────────────────────────
+  const PIN_ID = 's07';
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  const pinned = STORIES.find(s => s.id === PIN_ID);
+  const order = [pinned, ...shuffle(STORIES.filter(s => s.id !== PIN_ID))];
+
+  let storyIdx = 0;
+
+  // ─── Cover render ───────────────────────────────────────────────────
+  const cover = document.getElementById('cover');
+  const coverPhoto = document.getElementById('cover-photo');
+  const metaNum = document.getElementById('meta-num');
+  const metaPlace = document.getElementById('meta-place');
+  const metaDate = document.getElementById('meta-date');
+  const metaTitle = document.getElementById('meta-title');
+  const metaCaption = document.getElementById('meta-caption');
+  const openLabel = document.getElementById('open-label');
+  const progCur = document.getElementById('prog-cur');
+  const progTot = document.getElementById('prog-tot');
+  progTot.textContent = String(order.length).padStart(2, '0');
+
+  function applyCoverContent(story) {
+    metaNum.textContent = story.num;
+    metaPlace.innerHTML = story.place;
+    metaDate.innerHTML = story.date;
+    metaTitle.innerHTML = `${story.title[0]}<br>${story.title[1]}`;
+    metaCaption.innerHTML = story.caption;
+    openLabel.textContent = `View story · ${story.count} pictures`;
+    progCur.textContent = String(storyIdx + 1).padStart(2, '0');
+  }
+
+  function renderCover(story, immediate) {
+    if (immediate) {
+      coverPhoto.style.backgroundImage = `url('images/${story.id}/${story.cover}.jpg')`;
+      applyCoverContent(story);
+      preloadNeighbors();
+      return;
+    }
+    cover.classList.add('changing');
+    const img = new Image();
+    const swap = () => {
+      coverPhoto.style.backgroundImage = `url('${img.src}')`;
+      applyCoverContent(story);
+      // small rAF to ensure the new background paints before fade-in
+      requestAnimationFrame(() => cover.classList.remove('changing'));
+      preloadNeighbors();
+    };
+    img.onload = () => setTimeout(swap, 220);
+    img.onerror = () => setTimeout(swap, 220);
+    img.src = `images/${story.id}/${story.cover}.jpg`;
+  }
+
+  function preloadNeighbors() {
+    const next = order[(storyIdx + 1) % order.length];
+    const prev = order[(storyIdx - 1 + order.length) % order.length];
+    [next, prev].forEach(s => {
+      const i = new Image();
+      i.src = `images/${s.id}/${s.cover}.jpg`;
+    });
+  }
+
+  function goToStory(idx) {
+    if (idx === storyIdx) return;
+    storyIdx = (idx + order.length) % order.length;
+    renderCover(order[storyIdx]);
+  }
+
+  document.getElementById('nav-prev').addEventListener('click', () => goToStory(storyIdx - 1));
+  document.getElementById('nav-next').addEventListener('click', () => goToStory(storyIdx + 1));
+
+  // initial render — VII pinned first
+  renderCover(order[0], true);
+
+  // ─── Gallery (horizontal slider) ────────────────────────────────────
+  const gallery = document.getElementById('gallery');
+  const track = document.getElementById('track');
+  const gPrev = document.getElementById('g-prev');
+  const gNext = document.getElementById('g-next');
+  const gDots = document.getElementById('g-dots');
+  const gCur = document.getElementById('g-cur');
+  const gTot = document.getElementById('g-tot');
+  const gNum = document.getElementById('g-num');
+  const gTitle = document.getElementById('g-title');
+  const gMeta = document.getElementById('g-meta');
+  const gPlace = document.getElementById('g-place');
+  const edgeLeft = gallery.querySelector('.edge-left');
+  const edgeRight = gallery.querySelector('.edge-right');
+
+  let curSlide = 0;
+  let totalSlides = 0;
+
+  function openGallery() {
+    const s = order[storyIdx];
+    gNum.textContent = s.num;
+    gTitle.innerHTML = `${s.title[0].replace(/<[^>]+>/g,'')} ${s.title[1].replace(/<[^>]+>/g,'')}`;
+    gMeta.innerHTML = `${s.place} &nbsp;·&nbsp; ${s.date}`;
+    gPlace.textContent = s.shortPlace;
+    gTot.textContent = s.count;
+
+    track.innerHTML = '';
+    gDots.innerHTML = '';
+    for (let n = 1; n <= s.count; n++) {
+      const slide = document.createElement('div');
+      slide.className = 'slide';
+      slide.innerHTML = `<div class="frame"><img src="images/${s.id}/${n}.jpg" alt="${s.shortPlace} ${n}"></div>`;
+      track.appendChild(slide);
+      const dot = document.createElement('button');
+      dot.className = 'dot' + (n === 1 ? ' active' : '');
+      dot.dataset.go = n - 1;
+      dot.setAttribute('aria-label', `Image ${n}`);
+      dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.go, 10)));
+      gDots.appendChild(dot);
+    }
+
+    totalSlides = s.count;
+    curSlide = 0;
+    track.scrollLeft = 0;
+    setSlideState(0);
+    updateEdges();
+
+    document.body.classList.add('gallery-open');
+  }
+
+  function closeGallery() {
+    document.body.classList.remove('gallery-open');
+  }
+
+  function setSlideState(idx) {
+    idx = Math.max(0, Math.min(totalSlides - 1, idx));
+    curSlide = idx;
+    gCur.textContent = idx + 1;
+    gDots.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+    gPrev.disabled = idx === 0;
+    gNext.disabled = idx === totalSlides - 1;
+  }
+
+  function updateEdges() {
+    edgeLeft.classList.toggle('hidden', track.scrollLeft <= 4);
+    edgeRight.classList.toggle('hidden', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
+  }
+
+  function nearestSlideIdx() {
+    const slides = [...track.querySelectorAll('.slide')];
+    const center = track.scrollLeft + track.clientWidth / 2;
+    let best = 0, dist = Infinity;
+    slides.forEach((s, i) => {
+      const c = s.offsetLeft + s.offsetWidth / 2;
+      const d = Math.abs(c - center);
+      if (d < dist) { dist = d; best = i; }
+    });
+    return best;
+  }
+
+  function goToSlide(idx) {
+    idx = Math.max(0, Math.min(totalSlides - 1, idx));
+    const slide = track.querySelectorAll('.slide')[idx];
+    if (slide) slide.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+    setSlideState(idx);
+  }
+
+  gPrev.addEventListener('click', () => goToSlide(curSlide - 1));
+  gNext.addEventListener('click', () => goToSlide(curSlide + 1));
+  let scrollTimer;
+  track.addEventListener('scroll', () => {
+    updateEdges();
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => setSlideState(nearestSlideIdx()), 80);
+  });
+
+  document.getElementById('open-btn').addEventListener('click', openGallery);
+  document.getElementById('close-btn').addEventListener('click', closeGallery);
+
+  // clicking anywhere on the cover (outside the CTA which already handles itself) opens the gallery
+  cover.addEventListener('click', (e) => {
+    if (e.target.closest('.cta')) return;
+    openGallery();
+  });
+
+  // ─── Keyboard nav ───────────────────────────────────────────────────
+  document.addEventListener('keydown', (e) => {
+    if (document.body.classList.contains('gallery-open')) {
+      if (e.key === 'ArrowRight') goToSlide(curSlide + 1);
+      else if (e.key === 'ArrowLeft') goToSlide(curSlide - 1);
+      else if (e.key === 'Escape') closeGallery();
+    } else {
+      if (e.key === 'ArrowRight') goToStory(storyIdx + 1);
+      else if (e.key === 'ArrowLeft') goToStory(storyIdx - 1);
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGallery(); }
+    }
+  });
+</script>
+</body>
+</html>
