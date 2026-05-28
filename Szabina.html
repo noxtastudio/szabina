@@ -681,7 +681,35 @@
 
   function openStory(sec) {
     const wasReplacing = activeStory && activeStory !== sec;
-    if (wasReplacing) closeStory(activeStory);
+
+    if (wasReplacing) {
+      // Close the previous story but keep body.story-open so the mast doesn't flicker
+      // between the two transitions.
+      const prevStory = activeStory;
+      const targetCover = sec.querySelector('.cover');
+      const initialViewportTop = targetCover.getBoundingClientRect().top;
+      prevStory.classList.remove('open');
+      activeStory = null;
+      // While the previous gallery's max-height collapses (~700ms), pin the clicked
+      // cover to its original viewport position so the page doesn't "shake".
+      const COLLAPSE_MS = 750;
+      const t0 = performance.now();
+      const maintainScroll = () => {
+        const drift = targetCover.getBoundingClientRect().top - initialViewportTop;
+        if (Math.abs(drift) > 0.5) window.scrollBy({top: drift, behavior: 'auto'});
+        if (performance.now() - t0 < COLLAPSE_MS) {
+          requestAnimationFrame(maintainScroll);
+        } else {
+          _proceedOpen(sec);
+        }
+      };
+      requestAnimationFrame(maintainScroll);
+    } else {
+      _proceedOpen(sec);
+    }
+  }
+
+  function _proceedOpen(sec) {
     sec.classList.add('open');
     document.body.classList.add('story-open');
     activeStory = sec;
@@ -690,12 +718,11 @@
       img.src = img.dataset.src;
       img.removeAttribute('data-src');
     });
-    // wait for the previous gallery's collapse transition (0.7s) to finish
-    // before computing the scroll target, otherwise the layout shifts mid-scroll
+    // brief delay so the open transition starts, then scroll into the gallery
     setTimeout(() => {
       const cover = sec.querySelector('.cover').getBoundingClientRect();
       window.scrollBy({top: cover.bottom - 40, behavior: 'smooth'});
-    }, wasReplacing ? 720 : 80);
+    }, 80);
   }
   function closeStory(sec) {
     sec.classList.remove('open');
