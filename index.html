@@ -44,6 +44,28 @@
   .mast .wordmark{font-size:14px;letter-spacing:0.32em;text-transform:uppercase;font-weight:500;font-family:"Cormorant Garamond",serif;cursor:pointer;transition:opacity .2s}
   .mast .wordmark:hover{opacity:.6}
   .mast .right{display:flex;gap:22px;align-items:center}
+  /* Hamburger toggle (hidden on desktop) */
+  .mast .menu-toggle{
+    display:none;
+    width:38px;height:38px;
+    background:rgba(10,5,0,0.45);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(250,242,224,0.12);
+    border-radius:50%;color:var(--paper);cursor:pointer;
+    align-items:center;justify-content:center;
+    pointer-events:auto;position:relative;
+  }
+  .mast .menu-toggle span{
+    position:absolute;left:11px;
+    display:block;width:16px;height:1px;background:currentColor;
+    transition:transform .25s ease, opacity .2s ease, top .25s ease;
+  }
+  .mast .menu-toggle span:nth-child(1){top:13px}
+  .mast .menu-toggle span:nth-child(2){top:18px}
+  .mast .menu-toggle span:nth-child(3){top:23px}
+  .mast.menu-open .menu-toggle span:nth-child(1){top:18px;transform:rotate(45deg)}
+  .mast.menu-open .menu-toggle span:nth-child(2){opacity:0}
+  .mast.menu-open .menu-toggle span:nth-child(3){top:18px;transform:rotate(-45deg)}
   .mast a{transition:opacity .2s}
   .mast a:hover{opacity:.6}
 
@@ -272,12 +294,19 @@
 
   /* ─── small phones ─── */
   @media (max-width: 600px){
-    /* Tighter mast pills so they don't wrap or eat the screen */
+    /* Tighter mast pill for the wordmark */
     .mast{padding:12px 12px}
-    .mast .wordmark,
-    .mast .right{padding:7px 12px;border-radius:18px}
-    .mast .wordmark{font-size:11px;letter-spacing:.22em}
-    .mast .right{gap:14px;font-size:10px;letter-spacing:.22em}
+    .mast .wordmark{padding:7px 12px;border-radius:18px;font-size:11px;letter-spacing:.22em}
+    /* Show the hamburger, hide the inline nav until menu-open */
+    .mast .menu-toggle{display:flex}
+    .mast .right{
+      display:none;
+      position:absolute;top:calc(100% + 6px);right:12px;
+      flex-direction:column;align-items:flex-end;gap:14px;
+      padding:18px 22px;border-radius:18px;
+      font-size:11px;letter-spacing:.22em;
+    }
+    .mast.menu-open .right{display:flex}
     .mast .right a{white-space:nowrap}
     /* Touch users swipe; the bouncing chevron + label collides with the CTA on phones */
     .scroll-hint{display:none}
@@ -304,8 +333,13 @@
 
 <header class="mast">
   <div class="wordmark">Szabina</div>
+  <button class="menu-toggle" aria-label="Menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
   <div class="right small-caps">
-    <a href="Szabina.html">My Story</a>
+    <a href="Szabina.html">About</a>
+    <a href="Travel.html">Travel</a>
+    <a href="Portrait.html">Portrait</a>
     <a href="https://instagram.com/szabina.bks" target="_blank" rel="noopener">@szabina.bks ↗</a>
   </div>
 </header>
@@ -536,7 +570,7 @@
   function renderCover(story, immediate, direction) {
     if (immediate) {
       const p = photoLayers[activeLayerIdx];
-      p.style.backgroundImage = `url('images/${story.id}/${story.cover}.jpg')`;
+      p.style.backgroundImage = `url('images/${story.id}/${story.cover}.webp')`;
       p.style.transform = 'translateY(0)';
       p.style.opacity = '';
       p.classList.add('on');
@@ -555,7 +589,7 @@
 
     cover.classList.add(outClass);
 
-    const imgUrl = `images/${story.id}/${story.cover}.jpg`;
+    const imgUrl = `images/${story.id}/${story.cover}.webp`;
 
     const runPhotoSlide = () => {
       // Set new photo's background and park it off-screen on the incoming side
@@ -607,7 +641,7 @@
     const prev = order[(storyIdx - 1 + order.length) % order.length];
     [next, prev].forEach(s => {
       const i = new Image();
-      i.src = `images/${s.id}/${s.cover}.jpg`;
+      i.src = `images/${s.id}/${s.cover}.webp`;
     });
   }
 
@@ -625,6 +659,28 @@
   document.querySelector('.mast .wordmark').addEventListener('click', () => {
     if (storyIdx !== 0) goToStory(0, 'prev');
   });
+
+  // Mobile menu toggle
+  (function setupMobileMenu(){
+    const mast = document.querySelector('.mast');
+    const toggle = mast && mast.querySelector('.menu-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = mast.classList.toggle('menu-open');
+      toggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.mast')) {
+        mast.classList.remove('menu-open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+    mast.querySelectorAll('.right a').forEach(a => a.addEventListener('click', () => {
+      mast.classList.remove('menu-open');
+      toggle.setAttribute('aria-expanded', 'false');
+    }));
+  })();
 
   // initial render — VII pinned first
   renderCover(order[0], true);
@@ -699,7 +755,7 @@
     for (let n = 1; n <= s.count; n++) {
       const slide = document.createElement('div');
       slide.className = 'slide';
-      slide.innerHTML = `<div class="frame"><img src="images/${s.id}/${n}.jpg" alt="${s.shortPlace} ${n}"></div>`;
+      slide.innerHTML = `<div class="frame"><img src="images/${s.id}/${n}.${n === 1 ? 'webp' : 'jpg'}" alt="${s.shortPlace} ${n}"></div>`;
       track.appendChild(slide);
       const dot = document.createElement('button');
       dot.className = 'dot' + (n === 1 ? ' active' : '');
