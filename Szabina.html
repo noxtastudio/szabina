@@ -85,11 +85,7 @@
   .mast.menu-open .menu-toggle span:nth-child(1){top:18px;transform:rotate(45deg)}
   .mast.menu-open .menu-toggle span:nth-child(2){opacity:0}
   .mast.menu-open .menu-toggle span:nth-child(3){top:18px;transform:rotate(-45deg)}
-  /* When About is visible, mast isn't framed → toggle uses dark ink color on white */
-  .mast:not(.framed) .menu-toggle{
-    background:transparent;border-color:rgba(60,40,30,0.18);color:var(--ink);
-    backdrop-filter:none;-webkit-backdrop-filter:none;
-  }
+  /* (menu-toggle uses its default dark-pill style; only ever shown on mobile) */
 
   /* ───────── About panel ───────── */
   .about{
@@ -418,18 +414,17 @@
     .gallery .foot{display:flex;justify-content:space-between;align-items:center;gap:14px}
   }
 
-  /* ───────── Scroll hint — pinned to the viewport bottom while About is in view ───────── */
+  /* ───────── Scroll hint — anchored at the bottom of the first viewport ───────── */
   .scroll-hint{
-    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+    position:absolute;left:50%;top:calc(100vh - 80px);transform:translateX(-50%);
     display:flex;flex-direction:column;align-items:center;gap:8px;
     padding:6px 10px;
     color:var(--ink-soft);
     background:transparent;
     border:0;cursor:pointer;font-family:inherit;
-    transition:opacity .35s ease;
+    transition:opacity .25s ease;
     z-index:5;
   }
-  .scroll-hint.hidden{opacity:0;pointer-events:none}
   .scroll-hint:hover{opacity:.6}
   .scroll-hint .lbl{
     font-family:"IBM Plex Mono",monospace;text-transform:uppercase;
@@ -499,13 +494,14 @@
 
   /* ─── small phones ─── */
   @media (max-width: 600px){
-    /* Mobile mast: always dark pills so wordmark/toggle/menu read over the portrait that sits behind it */
-    .mast{padding:12px 12px;color:var(--paper)}
+    /* Mobile mast: always dark pills so wordmark/toggle/menu read over the portrait behind them */
+    .mast{padding:12px 12px}
     .mast .wordmark{
       padding:7px 12px;border-radius:18px;font-size:11px;letter-spacing:.22em;
       background:rgba(10,5,0,0.55);
       backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
       border:1px solid rgba(250,242,224,0.12);
+      color:var(--paper);
     }
     .mast .menu-toggle{
       display:flex;
@@ -651,18 +647,9 @@
     document.getElementById('categories').scrollIntoView({behavior:'smooth', block:'start'});
   });
 
-  // Scroll-hint hides once About is out of view
+  // Mast pill-frame toggle anchor (also keeps for legacy IntersectionObserver hook)
   const aboutEl = document.querySelector('.about');
   const mast = document.querySelector('.mast');
-  const scrollHint = document.getElementById('scroll-to-categories');
-  if (aboutEl) {
-    const aboutIO = new IntersectionObserver((entries) => {
-      entries.forEach(en => {
-        if (scrollHint) scrollHint.classList.toggle('hidden', !en.isIntersecting);
-      });
-    }, {threshold:0});
-    aboutIO.observe(aboutEl);
-  }
 
   // Frame the mast nav as soon as you scroll (so it reads white-on-dark over the portrait
   // even while the About section is still visible).
