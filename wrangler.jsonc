@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "szabina",
+  "main": "_worker.js",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Serve everything in the repo as static assets.
+  // .assetsignore (already committed) keeps .git, scripts/, etc. out.
+  // The Worker (_worker.js) is only invoked for paths that don't match an asset.
+  "assets": {
+    "directory": "."
+  }
+}
