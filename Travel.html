@@ -38,10 +38,8 @@
     pointer-events:none;
     transition:color .3s ease, opacity .3s ease;
   }
-  body.story-open .mast{opacity:0;pointer-events:none}
-  body.story-open .mast .wordmark,
-  body.story-open .mast .right,
-  body.story-open .mast a{pointer-events:none}
+  /* mast stays visible while a story is open */
+  body.story-open .rail{opacity:0;pointer-events:none}
   .mast .wordmark,
   .mast .right{
     background:transparent;
@@ -366,15 +364,15 @@
     backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
     border:1px solid rgba(250,242,224,0.12);
     border-radius:22px;
-    padding:10px 14px;
+    padding:8px 12px;
     pointer-events:auto;
     transition:opacity .3s ease;
   }
   .rail.hidden{opacity:0;pointer-events:none}
   .rail .tick{
-    display:flex;align-items:center;gap:12px;padding:5px 0;
+    display:flex;align-items:center;gap:10px;padding:2px 0;
     color:rgba(250,242,224,0.6);transition:color .2s;
-    font-size:11px;font-family:"IBM Plex Mono",monospace;letter-spacing:.18em;
+    font-size:10px;font-family:"IBM Plex Mono",monospace;letter-spacing:.16em;
   }
   .rail .tick .bar{width:22px;height:1px;background:currentColor;transition:width .25s, background .25s}
   .rail .tick:hover{color:var(--paper)}
@@ -463,6 +461,7 @@
     <div class="right small-caps">
       <a href="index.html">Home</a>
       <a href="Szabina.html">About</a>
+      <a href="Travel.html">Travel</a>
       <a href="Portrait.html">Portrait</a>
       <a href="https://instagram.com/szabina.bks" target="_blank" rel="noopener">@szabina.bks ↗</a>
     </div>
@@ -579,6 +578,86 @@
       caption:"Early morning, no crowd. Fresh air and a rising sun at one of the most iconic spots in the world. Briefly, the carousel was mine.",
       shortPlace:"Santa Monica"
     },
+    {
+      id:"s13", num:"XIII", coverExt:"jpg",
+      cover:1, count:8, date:"08 · VIII · 25",
+      place:"Hollywood Hills · California",
+      title:["Away from", "<em>the crowd</em>."],
+      caption:"A road folds itself into the hills until the city is just a hum behind you. Two small figures, one long bend, the rest is quiet.",
+      shortPlace:"Hollywood Hills"
+    },
+    {
+      id:"s14", num:"XIV", coverExt:"jpg",
+      cover:1, count:10, date:"10 · VIII · 25",
+      place:"Daly City · California",
+      title:["Restless ocean,", "<em>endless peace</em>."],
+      caption:"Black sand, white waves, one figure that did not bring a watch. The Pacific keeps its own time and lets you in for free.",
+      shortPlace:"Daly City"
+    },
+    {
+      id:"s15", num:"XV", coverExt:"jpg",
+      cover:1, count:14, date:"16 · VIII · 25",
+      place:"San Francisco · California",
+      title:["Precious moments", "from <em>San Francisco</em>."],
+      caption:"The bridge, the bay, the fog still figuring out how to be a city. A few hours that I keep getting back to in my head.",
+      shortPlace:"San Francisco"
+    },
+    {
+      id:"s16", num:"XVI", coverExt:"jpg",
+      cover:1, count:6, date:"26 · XII · 25",
+      place:"The Woods · Netherlands",
+      title:["Beauty of", "<em>the woods</em>."],
+      caption:"A polaroid pinned to a forest. The trees pretended not to notice, and the photograph stayed anyway.",
+      shortPlace:"The Woods"
+    },
+    {
+      id:"s17", num:"XVII", coverExt:"jpg",
+      cover:1, count:11, date:"03 · I · 26",
+      place:"Rosmalen · Netherlands",
+      title:["Woke up an", "<em>excited kid</em>."],
+      caption:"First real snow of the year and the woods agreed to play. The kid that lives somewhere in the back of all of us showed up uninvited.",
+      shortPlace:"Rosmalen"
+    },
+    {
+      id:"s18", num:"XVIII", coverExt:"jpg",
+      cover:1, count:4, date:"13 · I · 26",
+      place:"Monument Valley · revisited",
+      title:["Last", "<em>May</em>."],
+      caption:"The sandstone keeps a record of light that doesn&rsquo;t need a calendar to read it back. A return trip in the head, half a year later.",
+      shortPlace:"MV · memory"
+    },
+    {
+      id:"s19", num:"XIX", coverExt:"jpg",
+      cover:1, count:4, date:"13 · I · 26",
+      place:"Grand Canyon · Arizona",
+      title:["Edge of", "<em>everything</em>."],
+      caption:"One small figure on a long ledge. The canyon does what it always does &mdash; it stays, and it makes the rest of us look briefly honest.",
+      shortPlace:"GC · memory"
+    },
+    {
+      id:"s20", num:"XX", coverExt:"jpg",
+      cover:1, count:3, date:"18 · I · 26",
+      place:"Sequoia National Park · California",
+      title:["Walking back", "<em>through it</em>."],
+      caption:"Two people, one trail, two-thousand-year-old neighbors. The path remembers more than we ever will.",
+      shortPlace:"Sequoia · memory"
+    },
+    {
+      id:"s21", num:"XXI", coverExt:"jpg",
+      cover:1, count:8, date:"06 · II · 26",
+      place:"Ouddorp · Netherlands",
+      title:["One evening", "in <em>February</em>."],
+      caption:"A red lighthouse, blue hour, dune grass that pretends to listen. The kind of evening you write down so you don&rsquo;t lose it.",
+      shortPlace:"Ouddorp"
+    },
+    {
+      id:"s24", num:"XXII", coverExt:"jpg",
+      cover:1, count:12, date:"18 · IV · 26",
+      place:"Doel · Belgium",
+      title:["Art and", "<em>ghost town</em>."],
+      caption:"The walls keep painting themselves. The people left a long time ago. I stayed for an afternoon and the wall waved back.",
+      shortPlace:"Doel"
+    },
   ];
 
   // ─── Build DOM ──────────────────────────────────────────────────────
@@ -596,13 +675,13 @@
     let slides = '';
     let dots = '';
     for (let n = 1; n <= s.count; n++) {
-      slides += `<div class="slide" data-slide="${n-1}"><div class="frame"><img data-src="images/${s.id}/${n}.${n === 1 ? 'webp' : 'jpg'}" alt="${s.shortPlace} ${n}"></div></div>`;
+      slides += `<div class="slide" data-slide="${n-1}"><div class="frame"><img data-src="images/${s.id}/${n}.${n === 1 ? (s.coverExt || 'webp') : 'jpg'}" alt="${s.shortPlace} ${n}"></div></div>`;
       dots += `<button class="dot${n===1?' active':''}" data-go="${n-1}" aria-label="Image ${n}"></button>`;
     }
 
     sec.innerHTML = `
       <div class="cover" data-toggle="${s.id}">
-        <div class="photo" style="background-image:url('images/${s.id}/${s.cover}.webp')"></div>
+        <div class="photo" style="background-image:url('images/${s.id}/${s.cover}.${s.coverExt || 'webp'}')"></div>
         <div class="veil"></div>
         <div class="veil-left"></div>
         <div class="text">
