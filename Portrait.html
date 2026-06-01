@@ -481,40 +481,8 @@
 
 <script>
   // ─── Story data ─────────────────────────────────────────────────────
-  const STORIES = [
-    {
-      id:"p01", num:"I", coverExt:"jpg",
-      cover:1, count:3, date:"14 · II · 26",
-      place:"Valentine&rsquo;s Day · at home",
-      title:["Romance with", "my <em>donut</em>."],
-      caption:"February 14. The pink one got the seat at the table. No regrets, no notes.",
-      shortPlace:"Donut day"
-    },
-    {
-      id:"p02", num:"II", coverExt:"jpg",
-      cover:1, count:2, date:"30 · V · 26",
-      place:"Self&#8209;portrait · studio",
-      title:["Behind the", "<em>red</em>."],
-      caption:"Fabric pulled across the lens. A face beneath that doesn&rsquo;t quite need to be seen &mdash; and that, I think, is the point.",
-      shortPlace:"In red"
-    },
-    {
-      id:"p03", num:"III", coverExt:"jpg",
-      cover:1, count:7, date:"19 · IV · 26",
-      place:"Loonse en Drunense Duinen · NL",
-      title:["Self-portrait,", "in <em>the dunes</em>."],
-      caption:"A knit sweater laid across sand that has been here longer than language. Loonse en Drunense Duinen, on a quiet afternoon.",
-      shortPlace:"In the dunes"
-    },
-    {
-      id:"p04", num:"IV", coverExt:"jpg",
-      cover:1, count:2, date:"30 · V · 26",
-      place:"Self&#8209;portrait · garden",
-      title:["A quiet", "<em>afternoon</em>."],
-      caption:"Black and white, a wooden fence, an embroidered dress. A few minutes that turned into a small series and then into a longer thought.",
-      shortPlace:"In white"
-    },
-  ];
+  (async function init(){
+  const STORIES = await fetch("data/portrait.json").then(r => r.json());
 
   // ─── Build DOM ──────────────────────────────────────────────────────
   const main = document.getElementById('stories');
@@ -830,6 +798,7 @@
     });
   }, { threshold: [0.25] });
   revealEls.forEach(el => revealIO.observe(el));
+  })();
 </script>
 </body>
 </html>

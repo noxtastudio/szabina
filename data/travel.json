@@ -1,0 +1,532 @@
+[
+  {
+    "id": "s01",
+    "num": "I",
+    "cover": 1,
+    "count": 8,
+    "date": "19 · VII · 25",
+    "place": "Monument Valley · Utah · Arizona",
+    "title": [
+      "The highway that wouldn&rsquo;t",
+      "<em>stop running</em>."
+    ],
+    "caption": "A sandstone spire holds the last of the day. The road that brought me here was named, in the end, by a man who simply would not stop running &mdash; and I understood him better than I expected to.",
+    "shortPlace": "Monument Valley",
+    "images": [
+      "1.webp",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg"
+    ]
+  },
+  {
+    "id": "s02",
+    "num": "II",
+    "cover": 1,
+    "count": 9,
+    "date": "20 · VII · 25",
+    "place": "Death Valley · California",
+    "title": [
+      "Below the sea,",
+      "<em>above</em> the sky."
+    ],
+    "caption": "This place earned its name. Below sea level, above the clouds, nothing in between except the heat and a few honest thoughts about endings.",
+    "shortPlace": "Death Valley",
+    "images": [
+      "1.webp",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg",
+      "9.jpg"
+    ]
+  },
+  {
+    "id": "s03",
+    "num": "III",
+    "cover": 1,
+    "count": 8,
+    "date": "21 · VII · 25",
+    "place": "Vermilion Cliffs · Arizona",
+    "title": [
+      "Please never",
+      "<em>find me</em>."
+    ],
+    "caption": "I&rsquo;m going to hide somewhere in Arizona. There are folds in the red rock big enough to lose a life inside of, and most days that sounds like an offer worth considering.",
+    "shortPlace": "Arizona",
+    "images": [
+      "1.webp",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg"
+    ]
+  },
+  {
+    "id": "s04",
+    "num": "IV",
+    "cover": 1,
+    "count": 8,
+    "date": "22 · VII · 25",
+    "place": "Grand Canyon · South Kaibab Trail",
+    "title": [
+      "The <em>biggest</em>",
+      "of all."
+    ],
+    "caption": "No photograph survives this place. You stand at the rim and the scale rearranges your idea of what a hole in the earth can be.",
+    "shortPlace": "Grand Canyon",
+    "images": [
+      "1.webp",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg"
+    ]
+  },
+  {
+    "id": "s05",
+    "num": "V",
+    "cover": 1,
+    "count": 9,
+    "date": "23 · VII · 25",
+    "place": "Upper Antelope Canyon · Page, AZ",
+    "title": [
+      "Is <em>this</em>",
+      "even real."
+    ],
+    "caption": "The walls move like fabric. The light arrives once a day and the rest is patience. Solo&#8209;traveller souls share looks and ask nothing.",
+    "shortPlace": "Antelope Canyon",
+    "images": [
+      "1.webp",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg",
+      "9.jpg"
+    ]
+  },
+  {
+    "id": "s06",
+    "num": "VI",
+    "cover": 1,
+    "count": 9,
+    "date": "25 · VII · 25",
+    "place": "Zion Canyon · Utah",
+    "title": [
+      "On the way to",
+      "<em>Angels Landing</em>."
+    ],
+    "caption": "Nature never disappoints, at least not in Utah. The trail folds itself into the cliff like a question being asked over and over, and the answer is &mdash; keep climbing.",
+    "shortPlace": "Zion",
+    "images": [
+      "1.webp",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg",
+      "9.jpg"
+    ]
+  },
+  {
+    "id": "s07",
+    "num": "VII",
+    "cover": 1,
+    "count": 6,
+    "date": "27 · VII · 25",
+    "place": "Sequoia National Park · California",
+    "title": [
+      "Twenty&#8209;nine, beside",
+      "<em>two thousand</em>."
+    ],
+    "caption": "Twenty-nine years doesn&rsquo;t feel like a lot when you&rsquo;re standing next to ladies who were here for two thousand. The forest does not console you so much as quietly correct your sense of proportion.",
+    "shortPlace": "Sequoia",
+    "images": [
+      "1.webp",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg"
+    ]
+  },
+  {
+    "id": "s08",
+    "num": "VIII",
+    "cover": 1,
+    "count": 3,
+    "date": "30 · VII · 25",
+    "place": "Horseshoe Bend · 04:30",
+    "title": [
+      "Could not",
+      "<em>sleep</em>."
+    ],
+    "caption": "4:30 AM, could not sleep. 5:21 AM, no sun today. 5:25 AM, sun left the chat. A short obituary for a morning that almost happened.",
+    "shortPlace": "Sleep?",
+    "images": [
+      "1.webp",
+      "2.jpg",
+      "3.jpg"
+    ]
+  },
+  {
+    "id": "s09",
+    "num": "IX",
+    "cover": 1,
+    "count": 3,
+    "date": "01 · VIII · 25",
+    "place": "Sequoia, again · California",
+    "title": [
+      "A random",
+      "<em>blessing</em>."
+    ],
+    "caption": "A random blessing on the way out of the woods. Love ya, golden hour. We&rsquo;ll meet again, probably when I&rsquo;ve given up on you.",
+    "shortPlace": "Golden hour",
+    "images": [
+      "1.webp",
+      "2.jpg",
+      "3.jpg"
+    ]
+  },
+  {
+    "id": "s10",
+    "num": "X",
+    "cover": 1,
+    "count": 10,
+    "date": "02 · VIII · 25",
+    "place": "Vernal &amp; Nevada Falls · Yosemite",
+    "title": [
+      "Memorial Day,",
+      "<em>Mist Trail</em>."
+    ],
+    "caption": "The Memorial Day crowd got me. The bears did not. Halfway up I forgot what I was here for and let the spray decide.",
+    "shortPlace": "Yosemite",
+    "images": [
+      "1.webp",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg",
+      "9.jpg",
+      "10.jpg"
+    ]
+  },
+  {
+    "id": "s11",
+    "num": "XI",
+    "cover": 1,
+    "count": 6,
+    "date": "03 · VIII · 25",
+    "place": "MXGP of Flanders · Lommelwood, BE",
+    "title": [
+      "My favorite",
+      "<em>energy</em>."
+    ],
+    "caption": "Welcome to Lommelwood. Two-stroke, four-stroke, sunburn, beer, the kind of cheering you feel through your shoes. A reminder that beauty doesn&rsquo;t have to be quiet to be holy.",
+    "shortPlace": "Lommelwood",
+    "images": [
+      "1.webp",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg"
+    ]
+  },
+  {
+    "id": "s12",
+    "num": "XII",
+    "cover": 1,
+    "count": 9,
+    "date": "05 · VIII · 25",
+    "place": "Santa Monica Pier · California",
+    "title": [
+      "Pacific Park,",
+      "<em>no one</em> awake."
+    ],
+    "caption": "Early morning, no crowd. Fresh air and a rising sun at one of the most iconic spots in the world. Briefly, the carousel was mine.",
+    "shortPlace": "Santa Monica",
+    "images": [
+      "1.webp",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg",
+      "9.jpg"
+    ]
+  },
+  {
+    "id": "s13",
+    "num": "XIII",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 8,
+    "date": "08 · VIII · 25",
+    "place": "Hollywood Hills · California",
+    "title": [
+      "Away from",
+      "<em>the crowd</em>."
+    ],
+    "caption": "A road folds itself into the hills until the city is just a hum behind you. Two small figures, one long bend, the rest is quiet.",
+    "shortPlace": "Hollywood Hills",
+    "images": [
+      "1.jpg",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg"
+    ]
+  },
+  {
+    "id": "s14",
+    "num": "XIV",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 10,
+    "date": "10 · VIII · 25",
+    "place": "Daly City · California",
+    "title": [
+      "Restless ocean,",
+      "<em>endless peace</em>."
+    ],
+    "caption": "Black sand, white waves, one figure that did not bring a watch. The Pacific keeps its own time and lets you in for free.",
+    "shortPlace": "Daly City",
+    "images": [
+      "1.jpg",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg",
+      "9.jpg",
+      "10.jpg"
+    ]
+  },
+  {
+    "id": "s15",
+    "num": "XV",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 14,
+    "date": "16 · VIII · 25",
+    "place": "San Francisco · California",
+    "title": [
+      "Precious moments",
+      "from <em>San Francisco</em>."
+    ],
+    "caption": "The bridge, the bay, the fog still figuring out how to be a city. A few hours that I keep getting back to in my head.",
+    "shortPlace": "San Francisco",
+    "images": [
+      "1.jpg",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg",
+      "9.jpg",
+      "10.jpg",
+      "11.jpg",
+      "12.jpg",
+      "13.jpg",
+      "14.jpg"
+    ]
+  },
+  {
+    "id": "s16",
+    "num": "XVI",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 6,
+    "date": "26 · XII · 25",
+    "place": "The Woods · Netherlands",
+    "title": [
+      "Beauty of",
+      "<em>the woods</em>."
+    ],
+    "caption": "A polaroid pinned to a forest. The trees pretended not to notice, and the photograph stayed anyway.",
+    "shortPlace": "The Woods",
+    "images": [
+      "1.jpg",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg"
+    ]
+  },
+  {
+    "id": "s17",
+    "num": "XVII",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 11,
+    "date": "03 · I · 26",
+    "place": "Rosmalen · Netherlands",
+    "title": [
+      "Woke up an",
+      "<em>excited kid</em>."
+    ],
+    "caption": "First real snow of the year and the woods agreed to play. The kid that lives somewhere in the back of all of us showed up uninvited.",
+    "shortPlace": "Rosmalen",
+    "images": [
+      "1.jpg",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg",
+      "9.jpg",
+      "10.jpg",
+      "11.jpg"
+    ]
+  },
+  {
+    "id": "s18",
+    "num": "XVIII",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 4,
+    "date": "13 · I · 26",
+    "place": "Monument Valley · revisited",
+    "title": [
+      "Last",
+      "<em>May</em>."
+    ],
+    "caption": "The sandstone keeps a record of light that doesn&rsquo;t need a calendar to read it back. A return trip in the head, half a year later.",
+    "shortPlace": "MV · memory",
+    "images": [
+      "1.jpg",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg"
+    ]
+  },
+  {
+    "id": "s19",
+    "num": "XIX",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 4,
+    "date": "13 · I · 26",
+    "place": "Grand Canyon · Arizona",
+    "title": [
+      "Edge of",
+      "<em>everything</em>."
+    ],
+    "caption": "One small figure on a long ledge. The canyon does what it always does &mdash; it stays, and it makes the rest of us look briefly honest.",
+    "shortPlace": "GC · memory",
+    "images": [
+      "1.jpg",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg"
+    ]
+  },
+  {
+    "id": "s20",
+    "num": "XX",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 3,
+    "date": "18 · I · 26",
+    "place": "Sequoia National Park · California",
+    "title": [
+      "Walking back",
+      "<em>through it</em>."
+    ],
+    "caption": "Two people, one trail, two-thousand-year-old neighbors. The path remembers more than we ever will.",
+    "shortPlace": "Sequoia · memory",
+    "images": [
+      "1.jpg",
+      "2.jpg",
+      "3.jpg"
+    ]
+  },
+  {
+    "id": "s21",
+    "num": "XXI",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 8,
+    "date": "06 · II · 26",
+    "place": "Ouddorp · Netherlands",
+    "title": [
+      "One evening",
+      "in <em>February</em>."
+    ],
+    "caption": "A red lighthouse, blue hour, dune grass that pretends to listen. The kind of evening you write down so you don&rsquo;t lose it.",
+    "shortPlace": "Ouddorp",
+    "images": [
+      "1.jpg",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg"
+    ]
+  },
+  {
+    "id": "s24",
+    "num": "XXII",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 12,
+    "date": "18 · IV · 26",
+    "place": "Doel · Belgium",
+    "title": [
+      "Art and",
+      "<em>ghost town</em>."
+    ],
+    "caption": "The walls keep painting themselves. The people left a long time ago. I stayed for an afternoon and the wall waved back.",
+    "shortPlace": "Doel",
+    "images": [
+      "1.jpg",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg",
+      "9.jpg",
+      "10.jpg",
+      "11.jpg",
+      "12.jpg"
+    ]
+  }
+]
