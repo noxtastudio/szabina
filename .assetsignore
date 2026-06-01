@@ -1,0 +1,25 @@
+# Files Cloudflare should NOT upload as static assets.
+# Same syntax as .gitignore.
+
+# Git internals — the 142MB packfile lives here
+.git
+.gitignore
+
+# Local OS junk
+.DS_Store
+**/.DS_Store
+
+# Claude Code / IDE session state
+.claude
+.claude-flow
+.vscode
+
+# Build-time tooling, not served at runtime
+scripts
+node_modules
+
+# Wrangler's own scratch
+.wrangler
+
+# Markdown / docs
+*.md
