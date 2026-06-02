@@ -80,5 +80,21 @@
       "1.jpg",
       "2.jpg"
     ]
+  },
+  {
+    "id": "p05",
+    "num": "V",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 0,
+    "date": "02 · VI · 26",
+    "place": "Self‑portrait · garden",
+    "title": [
+      "New story",
+      "<em>title</em>."
+    ],
+    "caption": "Caption goes here. Edit me before saving.",
+    "shortPlace": "New",
+    "images": []
   }
 ]
