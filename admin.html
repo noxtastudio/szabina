@@ -334,6 +334,26 @@
   .editor .images .upload-tile.busy{cursor:wait;border-style:solid}
   .editor .images .upload-tile.busy .plus{display:none}
 
+  /* Danger zone — at the bottom of the editor pane */
+  .danger{
+    margin-top:48px;padding-top:24px;
+    border-top:1px solid var(--paper-faint);
+  }
+  .danger h3{
+    color:var(--err);text-transform:uppercase;letter-spacing:0.18em;
+    font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:400;
+    margin-bottom:12px;
+  }
+  .danger p{color:var(--paper-dim);font-size:13px;font-style:italic;margin-bottom:14px;max-width:60ch}
+  .danger button{
+    padding:10px 18px;font-family:inherit;font-size:12px;cursor:pointer;
+    background:transparent;color:var(--err);
+    border:1px solid var(--err);border-radius:8px;
+    letter-spacing:0.18em;text-transform:uppercase;
+    transition:background .15s,color .15s;
+  }
+  .danger button:hover{background:var(--err);color:var(--paper)}
+
   .toast{
     position:fixed;bottom:24px;right:24px;
     padding:14px 22px;border-radius:10px;
@@ -612,8 +632,8 @@ function renderEditor() {
       <h3>Photos (${images.length}) — drag to reorder · hover for ⭐ cover / ✕ delete</h3>
       <label class="upload-tile" id="upload-tile">
         <span class="plus">+</span>
-        <span class="lbl" id="upload-lbl">Add photo</span>
-        <input type="file" id="file-upload" accept="image/*" hidden>
+        <span class="lbl" id="upload-lbl">Add photo(s)</span>
+        <input type="file" id="file-upload" accept="image/*" multiple hidden>
       </label>
       ${images.map((fn, i) => `
         <div class="thumb${i === coverIdx ? ' cover' : ''}" draggable="true" data-idx="${i}" data-filename="${escAttr(fn)}" style="background-image:url('images/${folder}/${fn}')">
@@ -626,6 +646,12 @@ function renderEditor() {
         </div>
       `).join('')}
     </div>
+
+    <section class="danger">
+      <h3>Danger zone</h3>
+      <p>Deleting this story removes it from the JSON and renumbers everything after it. Photo files stay in git history; they're orphaned in the repo but recoverable.</p>
+      <button id="btn-delete-story" type="button">Delete this story</button>
+    </section>
   `;
 
   // Wire inputs → populate values (with entity decoding) + listen for edits
@@ -639,6 +665,7 @@ function renderEditor() {
   });
 
   wireImageControls();
+  document.getElementById('btn-delete-story').addEventListener('click', deleteStory);
 
   // Savebar is persistent in DOM — reveal it now
   document.getElementById('savebar').classList.add('live');
@@ -646,16 +673,72 @@ function renderEditor() {
   refreshSavebar();
 }
 
+// ─── Delete story (renumbers everything after it) ────────────────────────
+function renumber(arr) {
+  return arr.map((s, i) => ({ ...s, num: toRoman(i + 1) }));
+}
+
+async function deleteStory() {
+  const cat = state.activeCategory;
+  const idx = state.activeIdx;
+  const s = state[cat].data[idx];
+  const label = `${s.num} · ${decodeEntities((s.title?.[0] || '') + ' ' + (s.title?.[1] || ''))}`.trim();
+
+  if (!confirm(`Delete "${label}"?\n\nRemoves story ${s.id} from ${cat}.json and renumbers everything below it.\nPhoto files in images/${s.id}/ are NOT deleted (git history keeps them).`)) return;
+
+  // If this was a brand-new unsaved story, just drop it locally.
+  if (s._isNew) {
+    state[cat].data.splice(idx, 1);
+    state.draft = null;
+    state.original = null;
+    state.activeIdx = null;
+    state.activeCategory = null;
+    renderSidebar();
+    editorEl.classList.add('empty');
+    editorEl.textContent = 'Pick a story on the left.';
+    document.getElementById('savebar').classList.remove('live');
+    toast('New story discarded');
+    return;
+  }
+
+  toast('Deleting…');
+  const newArr = renumber(state[cat].data.filter((_, i) => i !== idx));
+  try {
+    const r = await api('write-json', {
+      path: 'data/' + cat + '.json',
+      content: newArr,
+      sha: state[cat].sha,
+      message: 'admin: delete ' + s.id,
+    });
+    if (!r.ok) throw new Error(r.error || 'Delete failed');
+
+    state[cat].data = newArr;
+    state[cat].sha = r.sha;
+    state.draft = null;
+    state.original = null;
+    state.activeIdx = null;
+    state.activeCategory = null;
+
+    renderSidebar();
+    editorEl.classList.add('empty');
+    editorEl.textContent = 'Pick a story on the left.';
+    document.getElementById('savebar').classList.remove('live');
+    toast(`Deleted ${s.id}`);
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+
 // ─── Image grid handlers ────────────────────────────────────────────────
 function wireImageControls() {
   const grid = document.getElementById('image-grid');
   if (!grid) return;
 
-  // Upload
+  // Upload — supports multi-file selection; uploads sequentially
   document.getElementById('file-upload').addEventListener('change', e => {
-    const file = e.target.files?.[0];
-    if (file) handleUpload(file);
-    e.target.value = ''; // reset so same file can be re-picked later
+    const files = Array.from(e.target.files || []);
+    if (files.length) handleUploads(files);
+    e.target.value = ''; // reset so same file(s) can be re-picked later
   });
 
   // Per-thumb controls (delegate)
@@ -751,33 +834,44 @@ async function handleDelete(idx, filename) {
   }
 }
 
-async function handleUpload(file) {
+async function handleUploads(files) {
   const folder = state.draft.id;
   const tile = document.getElementById('upload-tile');
   const lbl = document.getElementById('upload-lbl');
   tile.classList.add('busy');
-  lbl.textContent = 'Reading…';
 
+  let okCount = 0;
+  const total = files.length;
   try {
-    const filename = await pickFilename(file.name, folder);
-    const b64 = await fileToBase64(file);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const prefix = total > 1 ? `(${i + 1}/${total}) ` : '';
+      try {
+        lbl.textContent = `${prefix}Reading…`;
+        const filename = await pickFilename(file.name, folder);
+        const b64 = await fileToBase64(file);
 
-    lbl.textContent = 'Uploading…';
-    const path = `images/${folder}/${filename}`;
-    const r = await api('upload-image', { path, contentBase64: b64, message: 'admin: upload ' + path });
-    if (!r.ok) throw new Error(r.error || 'Upload failed');
+        lbl.textContent = `${prefix}Uploading…`;
+        const path = `images/${folder}/${filename}`;
+        const r = await api('upload-image', { path, contentBase64: b64, message: 'admin: upload ' + path });
+        if (!r.ok) throw new Error(r.error || 'Upload failed');
 
-    // Append to draft.images
-    state.draft.images.push(filename);
-    state.draft.count = state.draft.images.length;
-    renderEditor();
-    refreshSavebar();
-    toast('Uploaded ' + filename + ' — Save to publish the JSON change');
-  } catch (err) {
-    toast(err.message, true);
+        state.draft.images.push(filename);
+        state.draft.count = state.draft.images.length;
+        okCount++;
+        // Re-render only at end (or every file? every file is more responsive)
+        renderEditor();
+        refreshSavebar();
+      } catch (err) {
+        toast(`${file.name}: ${err.message}`, true);
+      }
+    }
+    if (okCount) {
+      toast(`Uploaded ${okCount}${total > 1 ? ` of ${total}` : ''} — Save to publish the JSON change`);
+    }
   } finally {
     tile.classList.remove('busy');
-    lbl.textContent = 'Add photo';
+    lbl.textContent = 'Add photo(s)';
   }
 }
 
@@ -878,12 +972,13 @@ async function save() {
   const saveBtn = document.getElementById('btn-save');
   const discardBtn = document.getElementById('btn-discard');
 
-  // Build new array with the draft replacing the active story, and
-  // strip the internal `_isNew` marker before persisting.
+  // Build new array with the draft replacing the active story, strip the
+  // internal `_isNew` marker, and recompute `num` from array position so
+  // Roman numerals always reflect current order.
   const newArr = state[cat].data.map((s, i) => {
     const src = i === state.activeIdx ? state.draft : s;
     const { _isNew, ...clean } = src;
-    return clean;
+    return { ...clean, num: toRoman(i + 1) };
   });
 
   ss.className = 'status saving';
