@@ -495,19 +495,23 @@
     sec.dataset.idx = i;
     sec.dataset.screenLabel = String(i+1).padStart(2,'0') + ' ' + s.shortPlace;
 
-    // build slide markup from s.images (the JSON's source-of-truth list).
+    // Full image list (cover still references by index into this).
     // Falls back to legacy `${n}.${ext}` construction if images[] is absent.
     const imgList = s.images && s.images.length
       ? s.images
       : Array.from({length: s.count}, (_, i) => `${i+1}.${i === 0 ? (s.coverExt || 'webp') : 'jpg'}`);
+    const coverFile = imgList[(s.cover || 1) - 1] || imgList[0];
+    // Gallery list excludes anything in hiddenInGallery — lets the cover
+    // photo be excluded from View Story to avoid duplication.
+    const hiddenSet = new Set(s.hiddenInGallery || []);
+    const galleryList = imgList.filter(fn => !hiddenSet.has(fn));
     let slides = '';
     let dots = '';
-    imgList.forEach((fn, n0) => {
+    galleryList.forEach((fn, n0) => {
       const n = n0 + 1;
       slides += `<div class="slide" data-slide="${n-1}"><div class="frame"><img data-src="images/${s.id}/${fn}" alt="${s.shortPlace} ${n}"></div></div>`;
       dots += `<button class="dot${n===1?' active':''}" data-go="${n-1}" aria-label="Image ${n}"></button>`;
     });
-    const coverFile = imgList[(s.cover || 1) - 1] || imgList[0];
 
     sec.innerHTML = `
       <div class="cover" data-toggle="${s.id}">
@@ -528,7 +532,7 @@
           </div>
           <div class="cta">
             <button class="open">
-              <span>View story · ${imgList.length} pictures</span>
+              <span>View story · ${galleryList.length} pictures</span>
               <span class="arrow">→</span>
             </button>
           </div>
@@ -559,7 +563,7 @@
               </div>
               <div class="dots">${dots}</div>
             </div>
-            <div class="counter"><span class="cur">1</span><span class="of">/</span><span class="tot">${imgList.length}</span></div>
+            <div class="counter"><span class="cur">1</span><span class="of">/</span><span class="tot">${galleryList.length}</span></div>
             <div class="place">${s.shortPlace}</div>
           </div>
         </div>
