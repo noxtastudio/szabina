@@ -1,0 +1,77 @@
+name: Resize uploaded images
+
+# Triggers when anything under images/ changes on main.
+# Skips itself: the action's own commit message has [auto-resize] so the guard below
+# prevents an infinite loop.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "images/**"
+
+permissions:
+  contents: write
+
+jobs:
+  resize:
+    if: "!contains(github.event.head_commit.message, '[auto-resize]')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          # We need at least 2 commits so we can diff against HEAD^
+          fetch-depth: 2
+
+      - name: Find images changed in this commit
+        id: changed
+        run: |
+          # New or modified image files (skip deletions)
+          git diff --diff-filter=AM --name-only HEAD^ HEAD \
+            | grep -Ei '^images/.*\.(jpe?g|png|webp)$' \
+            > /tmp/changed.txt || true
+          echo "Files to consider:"
+          cat /tmp/changed.txt || true
+          echo "count=$(wc -l < /tmp/changed.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Resize oversized images
+        if: steps.changed.outputs.count != '0'
+        run: |
+          set -euo pipefail
+          MAX_W=2000          # max width in px
+          MAX_BYTES=$((1024 * 1024))   # 1 MB threshold
+          changed_any=0
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            [ -f "$file" ] || continue
+
+            width=$(identify -format "%w" "$file[0]" 2>/dev/null || echo 0)
+            size=$(stat -c%s "$file")
+            if [ "$width" -gt "$MAX_W" ] || [ "$size" -gt "$MAX_BYTES" ]; then
+              echo "Resizing $file (was ${width}px, ${size} bytes)"
+              # -resize '2000x>' = only shrink if larger; preserves aspect ratio.
+              # -strip removes EXIF (smaller files, no GPS leak).
+              convert "$file" -auto-orient -resize "${MAX_W}x>" -quality 88 -strip "$file"
+              new_w=$(identify -format "%w" "$file[0]" 2>/dev/null || echo 0)
+              new_size=$(stat -c%s "$file")
+              echo "  -> ${new_w}px, ${new_size} bytes"
+              changed_any=1
+            else
+              echo "Skipping $file (${width}px, ${size} bytes — under thresholds)"
+            fi
+          done < /tmp/changed.txt
+          echo "changed_any=$changed_any" >> "$GITHUB_OUTPUT"
+        id: resize
+
+      - name: Commit resized images
+        if: steps.resize.outputs.changed_any == '1'
+        run: |
+          git config user.name  "auto-resize-bot"
+          git config user.email "bot@noxta.studio"
+          if [ -n "$(git status --porcelain images/)" ]; then
+            git add images/
+            git commit -m "[auto-resize] shrink oversized uploads"
+            git push
+          else
+            echo "No diff after resize — nothing to commit."
+          fi
