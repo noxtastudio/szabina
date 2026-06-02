@@ -86,7 +86,7 @@
     "num": "V",
     "coverExt": "jpg",
     "cover": 1,
-    "count": 0,
+    "count": 12,
     "date": "30 · V · 26",
     "place": "Self‑portrait · garden",
     "title": [
@@ -95,6 +95,19 @@
     ],
     "caption": "Black and white, a wooden fence, an embroidered dress. A few minutes that turned into a small series and then into a longer thought.",
     "shortPlace": "IN WHITE",
-    "images": []
+    "images": [
+      "1.jpg",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg",
+      "8.jpg",
+      "9.jpg",
+      "10.jpg",
+      "11.jpg",
+      "12.jpg"
+    ]
   }
 ]
