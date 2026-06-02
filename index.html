@@ -7,6 +7,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script>
+  // Apply admin-editable theme overrides. Defaults in :root still win on fetch failure.
+  fetch('data/theme.json').then(r => r.ok ? r.json() : null).then(theme => {
+    if (!theme) return;
+    for (const [k, v] of Object.entries(theme)) {
+      document.documentElement.style.setProperty('--' + k, v);
+    }
+  }).catch(() => {});
+</script>
 <style>
   :root{
     --bg:#f3e8d2;

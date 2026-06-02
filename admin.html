@@ -376,6 +376,62 @@
   }
   .danger button:hover{background:var(--err);color:var(--paper)}
 
+  /* ───── Theme editor ───── */
+  .theme-intro{
+    color:var(--paper-dim);font-style:italic;font-size:17px;line-height:1.55;
+    max-width:60ch;margin-bottom:32px;
+  }
+  .color-grid{
+    display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+    gap:18px;margin-bottom:32px;
+  }
+  .color-row{
+    display:flex;flex-direction:column;gap:8px;
+    background:rgba(250,242,224,0.04);
+    border:1px solid var(--paper-faint);border-radius:10px;
+    padding:14px;
+  }
+  .color-row .head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .color-row label{
+    color:var(--paper);text-transform:uppercase;letter-spacing:0.18em;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;
+  }
+  .color-row .help{color:var(--paper-dim);font-size:11px;font-style:italic}
+  .color-row .pickers{display:flex;gap:8px;align-items:center}
+  .color-row input[type=color]{
+    width:48px;height:36px;border:1px solid var(--paper-faint);border-radius:6px;
+    padding:0;cursor:pointer;background:transparent;
+  }
+  .color-row input[type=text]{
+    flex:1;padding:8px 12px;font-family:"IBM Plex Mono",monospace;font-size:13px;
+    background:rgba(250,242,224,0.04);border:1px solid var(--paper-faint);border-radius:6px;
+    color:var(--paper);text-transform:lowercase;
+  }
+  .color-row input[type=text]:focus{outline:0;border-color:var(--terra)}
+
+  /* Inline preview swatches showing palette in use */
+  .theme-preview{
+    border-top:1px solid var(--paper-faint);padding-top:24px;
+  }
+  .theme-preview .lbl{
+    color:var(--paper-dim);text-transform:uppercase;letter-spacing:0.18em;
+    font-family:"IBM Plex Mono",monospace;font-size:10px;margin-bottom:12px;
+  }
+  .theme-preview .demo{
+    padding:32px;border-radius:10px;
+    background:var(--pv-bg);color:var(--pv-ink);
+  }
+  .theme-preview .demo .eyebrow{
+    color:var(--pv-terra);font-family:"IBM Plex Mono",monospace;
+    text-transform:uppercase;letter-spacing:0.22em;font-size:11px;margin-bottom:18px;display:block;
+  }
+  .theme-preview .demo h2{
+    color:var(--pv-ink);font-weight:300;font-size:32px;line-height:1;margin-bottom:14px;
+  }
+  .theme-preview .demo h2 em{font-style:italic;color:var(--pv-terra-deep)}
+  .theme-preview .demo p{color:var(--pv-ink-soft);font-style:italic;font-size:17px;line-height:1.55;max-width:50ch}
+  .theme-preview .demo .meta{font-family:"IBM Plex Mono",monospace;color:var(--pv-muted);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;margin-top:18px}
+
   .toast{
     position:fixed;bottom:24px;right:24px;
     padding:14px 22px;border-radius:10px;
@@ -487,14 +543,18 @@ async function boot() {
   appEl.classList.add('live');
 
   toast('Loading stories…');
-  const [t, p] = await Promise.all([
+  const [t, p, th] = await Promise.all([
     api('read', { path: 'data/travel.json' }),
     api('read', { path: 'data/portrait.json' }),
+    api('read', { path: 'data/theme.json' }).catch(() => ({ ok: false })),
   ]);
   if (!t.ok || !p.ok) throw new Error(t.error || p.error || 'Read failed');
 
   state.travel = { data: t.data, sha: t.sha };
   state.portrait = { data: p.data, sha: p.sha };
+  state.theme = th.ok
+    ? { data: th.data, sha: th.sha }
+    : { data: { bg:'#ffffff', paper:'#faf2e0', ink:'#1a0c05', 'ink-soft':'#3b251a', muted:'#8b7866', terra:'#b8401b', 'terra-deep':'#7a2a10' }, sha: null };
 
   renderSidebar();
   toast('Loaded ' + t.data.length + ' travel + ' + p.data.length + ' portrait stories');
@@ -530,6 +590,26 @@ function renderSidebar() {
       sidebarEl.appendChild(btn);
     });
   }
+
+  // Theme section — one entry, opens the color editor
+  const th = document.createElement('h2');
+  th.innerHTML = '<span>Site theme</span>';
+  sidebarEl.appendChild(th);
+  const themeBtn = document.createElement('div');
+  themeBtn.className = 'story-item' + (state.activeCategory === 'theme' ? ' active' : '');
+  themeBtn.setAttribute('role', 'button');
+  themeBtn.setAttribute('tabindex', '0');
+  themeBtn.dataset.cat = 'theme';
+  themeBtn.dataset.idx = 0;
+  themeBtn.innerHTML = `
+    <span class="title">Brand palette</span>
+    <div class="sub">${Object.keys(state.theme?.data || {}).length} colors</div>
+  `;
+  themeBtn.addEventListener('click', selectTheme);
+  themeBtn.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectTheme(); }
+  });
+  sidebarEl.appendChild(themeBtn);
 }
 
 // ─── New story ───────────────────────────────────────────────────────────
@@ -598,6 +678,101 @@ function selectStory(cat, idx) {
 function isDirty() {
   if (!state.draft || !state.original) return false;
   return JSON.stringify(state.draft) !== JSON.stringify(state.original);
+}
+
+// ─── Theme editor ────────────────────────────────────────────────────────
+const THEME_KEYS = [
+  { key: 'bg',          help: 'Page background' },
+  { key: 'paper',       help: 'Cream / cover text' },
+  { key: 'ink',         help: 'Body text (dark)' },
+  { key: 'ink-soft',    help: 'Secondary text' },
+  { key: 'muted',       help: 'Tertiary / footer text' },
+  { key: 'terra',       help: 'Terracotta accent' },
+  { key: 'terra-deep',  help: 'Deeper terracotta (signature, italic)' },
+];
+
+function selectTheme() {
+  if (state.draft && isDirty()) {
+    if (!confirm('You have unsaved changes on the current story. Discard them?')) return;
+  }
+  state.activeCategory = 'theme';
+  state.activeIdx = 0;
+  state.original = { ...state.theme.data };
+  state.draft = { ...state.theme.data };
+
+  document.querySelectorAll('.story-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === 'theme');
+  });
+  renderThemeEditor();
+  document.getElementById('savebar').classList.add('live');
+  refreshSavebar();
+}
+
+function renderThemeEditor() {
+  editorEl.classList.remove('empty');
+  const t = state.draft;
+  editorEl.innerHTML = `
+    <h2 style="font-weight:300;font-size:36px;letter-spacing:-0.015em;margin-bottom:8px">Site theme</h2>
+    <p class="theme-intro">These seven colors drive every page. Changes apply site-wide on the next page load. Hex values; native color picker also supported.</p>
+    <div class="color-grid">
+      ${THEME_KEYS.map(({key, help}) => `
+        <div class="color-row" data-key="${key}">
+          <div class="head"><label>${key}</label><span class="help">${help}</span></div>
+          <div class="pickers">
+            <input type="color" value="${t[key] || '#000000'}">
+            <input type="text" class="hex" value="${t[key] || ''}" spellcheck="false">
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="theme-preview">
+      <div class="lbl">Preview — what a cover will look like</div>
+      <div class="demo" id="theme-demo">
+        <span class="eyebrow">Eyebrow text</span>
+        <h2>A sample <em>headline</em>.</h2>
+        <p>A short caption in italic, to show how the prose color reads against the background you picked. Adjust to taste.</p>
+        <div class="meta">Place · Date</div>
+      </div>
+    </div>
+  `;
+
+  // Wire each row: color picker ↔ hex input ↔ draft + live preview
+  editorEl.querySelectorAll('.color-row').forEach(row => {
+    const key = row.dataset.key;
+    const cp = row.querySelector('input[type=color]');
+    const hex = row.querySelector('input.hex');
+    cp.addEventListener('input', () => {
+      hex.value = cp.value;
+      state.draft[key] = cp.value;
+      refreshDemo();
+      refreshSavebar();
+    });
+    hex.addEventListener('input', () => {
+      const v = hex.value.trim();
+      if (/^#[0-9a-f]{6}$/i.test(v)) {
+        cp.value = v;
+        state.draft[key] = v;
+        refreshDemo();
+        refreshSavebar();
+      }
+    });
+  });
+
+  refreshDemo();
+}
+
+function refreshDemo() {
+  const demo = document.getElementById('theme-demo');
+  if (!demo) return;
+  const t = state.draft;
+  demo.style.setProperty('--pv-bg', t.bg);
+  demo.style.setProperty('--pv-paper', t.paper);
+  demo.style.setProperty('--pv-ink', t.ink);
+  demo.style.setProperty('--pv-ink-soft', t['ink-soft']);
+  demo.style.setProperty('--pv-muted', t.muted);
+  demo.style.setProperty('--pv-terra', t.terra);
+  demo.style.setProperty('--pv-terra-deep', t['terra-deep']);
 }
 
 function renderEditor() {
@@ -1099,8 +1274,39 @@ function updateSidebarItem() {
 
 function discard() {
   state.draft = JSON.parse(JSON.stringify(state.original));
-  renderEditor();
+  if (state.activeCategory === 'theme') renderThemeEditor();
+  else renderEditor();
+  refreshSavebar();
   toast('Discarded');
+}
+
+async function saveTheme(ss, saveBtn, discardBtn) {
+  ss.className = 'status saving';
+  ss.textContent = 'Saving theme…';
+  saveBtn.disabled = true;
+  discardBtn.disabled = true;
+  try {
+    const r = await api('write-json', {
+      path: 'data/theme.json',
+      content: state.draft,
+      sha: state.theme.sha,
+      message: 'admin: update theme',
+    });
+    if (!r.ok) throw new Error(r.error || 'Save failed');
+    state.theme.data = { ...state.draft };
+    state.theme.sha = r.sha;
+    state.original = { ...state.draft };
+    ss.className = 'status saved';
+    ss.textContent = 'Saved · commit ' + (r.commit || '').slice(0, 7);
+    setTimeout(refreshSavebar, 2500);
+    toast('Theme saved — refresh public pages to see it');
+  } catch (err) {
+    ss.className = 'status err';
+    ss.textContent = 'Error: ' + err.message;
+    saveBtn.disabled = false;
+    discardBtn.disabled = false;
+    toast(err.message, true);
+  }
 }
 
 async function save() {
@@ -1108,6 +1314,9 @@ async function save() {
   const ss = document.getElementById('savestatus');
   const saveBtn = document.getElementById('btn-save');
   const discardBtn = document.getElementById('btn-discard');
+
+  // Theme save uses a different schema (single object, not array of stories)
+  if (cat === 'theme') return saveTheme(ss, saveBtn, discardBtn);
 
   // Build new array with the draft replacing the active story, strip the
   // internal `_isNew` marker, and recompute `num` from array position so
