@@ -125,11 +125,13 @@
   .story-item.new .title:before{content:"✨ "}
   .story-item{
     display:block;width:100%;text-align:left;
-    background:transparent;border:0;color:var(--paper);
+    background:rgba(0,0,0,0.01);  /* not pure transparent — Safari needs this to register as drop target */
+    border:0;color:var(--paper);
     font-family:inherit;cursor:grab;
     padding:10px 22px;
     border-left:2px solid transparent;
     transition:background .15s,border-color .15s,opacity .15s;
+    user-select:none;
   }
   .story-item:active{cursor:grabbing}
   .story-item:hover{background:rgba(250,242,224,0.04)}
@@ -140,12 +142,14 @@
   .story-item .num{
     font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--paper-dim);
     letter-spacing:0.18em;margin-right:10px;
+    pointer-events:none;  /* let drag events bubble to .story-item */
   }
-  .story-item .title{font-size:17px;line-height:1.25}
+  .story-item .title{font-size:17px;line-height:1.25;pointer-events:none}
   .story-item .title em{font-style:italic;color:#ffb88c}
   .story-item .sub{
     font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--paper-dim);
     letter-spacing:0.1em;margin-top:4px;text-transform:uppercase;
+    pointer-events:none;
   }
 
   /* Editor (right) */
@@ -504,8 +508,12 @@ function renderSidebar() {
     h.querySelector('.new-btn').addEventListener('click', () => createStory(cat));
     sidebarEl.appendChild(h);
     state[cat].data.forEach((s, i) => {
-      const btn = document.createElement('button');
+      // Use a <div> instead of <button> — Safari's HTML5 drag-and-drop is
+      // unreliable on <button> elements inside an overflow:auto container.
+      const btn = document.createElement('div');
       btn.className = 'story-item' + (s._isNew ? ' new' : '');
+      btn.setAttribute('role', 'button');
+      btn.setAttribute('tabindex', '0');
       btn.draggable = true;
       btn.dataset.cat = cat;
       btn.dataset.idx = i;
@@ -516,6 +524,9 @@ function renderSidebar() {
         <div class="sub">${s.shortPlace || ''}</div>
       `;
       btn.addEventListener('click', () => selectStory(cat, i));
+      btn.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectStory(cat, i); }
+      });
       sidebarEl.appendChild(btn);
     });
   }
