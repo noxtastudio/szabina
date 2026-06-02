@@ -11,8 +11,8 @@
   :root{
     --bg:#1a0c05;
     --paper:#faf2e0;
-    --paper-dim:rgba(250,242,224,0.65);
-    --paper-faint:rgba(250,242,224,0.12);
+    --paper-dim:rgba(250,242,224,0.78);
+    --paper-faint:rgba(250,242,224,0.18);
     --terra:#b8401b;
     --terra-deep:#7a2a10;
     --ok:#6f9d5d;
@@ -163,10 +163,10 @@
   /* ───── Edit form ───── */
   .savebar{
     position:sticky;top:0;z-index:5;
-    margin:-32px -48px 24px;padding:14px 48px;
-    background:rgba(10,5,0,0.85);
-    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    margin:-32px -48px 32px;padding:16px 48px;
+    background:#1a0c05;
     border-bottom:1px solid var(--paper-faint);
+    box-shadow:0 8px 18px -8px rgba(0,0,0,0.6);
     display:flex;justify-content:space-between;align-items:center;gap:14px;
   }
   .savebar .status{color:var(--paper-dim);font-size:13px;font-style:italic}
@@ -448,32 +448,32 @@ function renderEditor() {
       <div class="field-row">
         <div class="field">
           <label for="f-place">Place</label>
-          <input id="f-place" data-path="place" value="${escAttr(s.place)}">
+          <input id="f-place" data-path="place">
         </div>
         <div class="field">
           <label for="f-date">Date</label>
-          <input id="f-date" data-path="date" value="${escAttr(s.date)}">
+          <input id="f-date" data-path="date">
         </div>
       </div>
 
       <div class="field">
         <label for="f-shortPlace">Short place <span class="hint">(shown in side rail)</span></label>
-        <input id="f-shortPlace" data-path="shortPlace" value="${escAttr(s.shortPlace)}">
+        <input id="f-shortPlace" data-path="shortPlace">
       </div>
 
       <div class="field">
         <label for="f-title0">Title — line 1</label>
-        <input id="f-title0" class="big" data-path="title.0" value="${escAttr(title0)}">
+        <input id="f-title0" class="big" data-path="title.0">
       </div>
 
       <div class="field">
         <label for="f-title1">Title — line 2 <span class="hint">use <code>&lt;em&gt;word&lt;/em&gt;</code> for italic</span></label>
-        <input id="f-title1" class="big" data-path="title.1" value="${escAttr(title1)}">
+        <input id="f-title1" class="big" data-path="title.1">
       </div>
 
       <div class="field">
         <label for="f-caption">Caption</label>
-        <textarea id="f-caption" data-path="caption" rows="4">${escHtml(s.caption || '')}</textarea>
+        <textarea id="f-caption" data-path="caption" rows="4"></textarea>
       </div>
     </form>
 
@@ -503,14 +503,26 @@ function renderEditor() {
     </div>
   `;
 
-  // Wire inputs → update draft + live preview
+  // Wire inputs → populate values (with entity decoding) + listen for edits
   editorEl.querySelectorAll('[data-path]').forEach(input => {
+    const path = input.dataset.path;
+    const raw = path.includes('.')
+      ? (state.draft[path.split('.')[0]] || [])[+path.split('.')[1]]
+      : state.draft[path];
+    input.value = decodeEntities(raw || '');
     input.addEventListener('input', onFieldChange);
   });
   document.getElementById('btn-save').addEventListener('click', save);
   document.getElementById('btn-discard').addEventListener('click', discard);
   refreshPreview();
   refreshSavebar();
+}
+
+// Browser-native HTML entity decoder — turns "I&rsquo;m" into "I'm" for editing
+function decodeEntities(s) {
+  const ta = document.createElement('textarea');
+  ta.innerHTML = String(s ?? '');
+  return ta.value;
 }
 
 function onFieldChange(e) {
