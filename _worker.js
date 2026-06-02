@@ -28,6 +28,22 @@ export default {
       return handleAdmin(request, env);
     }
 
+    // Diagnostic endpoint — reveals env var PRESENCE and LENGTH only, never values.
+    // Remove after setup is confirmed.
+    if (url.pathname === "/api/debug") {
+      const summary = (v) => v == null ? "MISSING" : `set, len=${v.length}, type=${typeof v}`;
+      return json({
+        ok: true,
+        env: {
+          ADMIN_PASSWORD: summary(env.ADMIN_PASSWORD),
+          GITHUB_TOKEN: summary(env.GITHUB_TOKEN),
+          GITHUB_REPO: env.GITHUB_REPO || "MISSING",
+        },
+        // List ALL bindings the Worker can see — catches name typos like "Admin_Password"
+        allBindings: Object.keys(env).sort(),
+      });
+    }
+
     // Worker only runs when no static asset matched — nothing else to do.
     return new Response("Not found", { status: 404 });
   },
