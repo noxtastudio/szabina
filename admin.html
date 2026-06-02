@@ -126,13 +126,17 @@
   .story-item{
     display:block;width:100%;text-align:left;
     background:transparent;border:0;color:var(--paper);
-    font-family:inherit;cursor:pointer;
+    font-family:inherit;cursor:grab;
     padding:10px 22px;
     border-left:2px solid transparent;
-    transition:background .15s,border-color .15s;
+    transition:background .15s,border-color .15s,opacity .15s;
   }
+  .story-item:active{cursor:grabbing}
   .story-item:hover{background:rgba(250,242,224,0.04)}
   .story-item.active{background:rgba(184,64,27,0.12);border-left-color:var(--terra)}
+  .story-item.dragging{opacity:0.35}
+  .story-item.drop-before{box-shadow:inset 0 3px 0 var(--terra)}
+  .story-item.drop-after{box-shadow:inset 0 -3px 0 var(--terra)}
   .story-item .num{
     font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--paper-dim);
     letter-spacing:0.18em;margin-right:10px;
@@ -502,6 +506,7 @@ function renderSidebar() {
     state[cat].data.forEach((s, i) => {
       const btn = document.createElement('button');
       btn.className = 'story-item' + (s._isNew ? ' new' : '');
+      btn.draggable = true;
       btn.dataset.cat = cat;
       btn.dataset.idx = i;
       const title = (s.title?.[0] || '') + ' ' + (s.title?.[1] || '');
@@ -690,9 +695,101 @@ function renderEditor() {
   refreshSavebar();
 }
 
-// ─── Delete story (renumbers everything after it) ────────────────────────
+// ─── Delete + reorder stories (renumber after structural changes) ───────
 function renumber(arr) {
   return arr.map((s, i) => ({ ...s, num: toRoman(i + 1) }));
+}
+
+// Drag-to-reorder stories. Restricted to same-category drops.
+let dragStoryFrom = null;
+function setupSidebarDrag() {
+  // Listeners attach to the sidebar container once; works for elements rerendered later
+  sidebarEl.addEventListener('dragstart', e => {
+    const item = e.target.closest('.story-item');
+    if (!item) return;
+    dragStoryFrom = { cat: item.dataset.cat, idx: +item.dataset.idx };
+    item.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  sidebarEl.addEventListener('dragend', () => {
+    document.querySelectorAll('.story-item').forEach(i =>
+      i.classList.remove('dragging', 'drop-before', 'drop-after'));
+    dragStoryFrom = null;
+  });
+  sidebarEl.addEventListener('dragover', e => {
+    const item = e.target.closest('.story-item');
+    if (!item || !dragStoryFrom) return;
+    if (item.dataset.cat !== dragStoryFrom.cat) return;  // same-category only
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.story-item').forEach(i =>
+      i.classList.remove('drop-before', 'drop-after'));
+    const rect = item.getBoundingClientRect();
+    const before = (e.clientY - rect.top) < rect.height / 2;
+    item.classList.add(before ? 'drop-before' : 'drop-after');
+  });
+  sidebarEl.addEventListener('drop', async e => {
+    const item = e.target.closest('.story-item');
+    if (!item || !dragStoryFrom) return;
+    if (item.dataset.cat !== dragStoryFrom.cat) return;
+    e.preventDefault();
+    const targetIdx = +item.dataset.idx;
+    const rect = item.getBoundingClientRect();
+    const before = (e.clientY - rect.top) < rect.height / 2;
+    let toIdx = before ? targetIdx : targetIdx + 1;
+    if (toIdx > dragStoryFrom.idx) toIdx--;
+    if (toIdx === dragStoryFrom.idx) return;
+    await reorderStory(dragStoryFrom.cat, dragStoryFrom.idx, toIdx);
+  });
+}
+setupSidebarDrag();  // safe to wire once at script load — sidebarEl is in DOM
+
+async function reorderStory(cat, fromIdx, toIdx) {
+  // Block reorder if there are uncommitted text edits on the active story
+  if (state.draft && isDirty()) {
+    if (!confirm('You have unsaved text edits on the current story. Discard them to commit the reorder?')) return;
+  }
+
+  const arr = state[cat].data.slice();
+  const [moved] = arr.splice(fromIdx, 1);
+  arr.splice(toIdx, 0, moved);
+  const newArr = renumber(arr).map(({ _isNew, ...clean }) => clean);
+
+  toast('Reordering…');
+  try {
+    const r = await api('write-json', {
+      path: 'data/' + cat + '.json',
+      content: newArr,
+      sha: state[cat].sha,
+      message: `admin: reorder ${cat}`,
+    });
+    if (!r.ok) throw new Error(r.error || 'Reorder failed');
+
+    state[cat].data = newArr;
+    state[cat].sha = r.sha;
+
+    // If the active story is in this category, recompute its index after the move
+    if (state.activeCategory === cat && state.activeIdx !== null) {
+      let a = state.activeIdx;
+      if (a === fromIdx) a = toIdx;
+      else if (fromIdx < a && toIdx >= a) a--;
+      else if (fromIdx > a && toIdx <= a) a++;
+      state.activeIdx = a;
+      state.original = state[cat].data[a];
+      state.draft = JSON.parse(JSON.stringify(state.original));
+    }
+
+    renderSidebar();
+    if (state.activeIdx !== null) {
+      document.querySelectorAll('.story-item').forEach(b => {
+        b.classList.toggle('active', b.dataset.cat === state.activeCategory && +b.dataset.idx === state.activeIdx);
+      });
+      renderEditor();
+    }
+    toast('Reordered — saved');
+  } catch (err) {
+    toast(err.message, true);
+  }
 }
 
 async function deleteStory() {
