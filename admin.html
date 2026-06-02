@@ -108,7 +108,21 @@
     font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:0.22em;
     font-size:10px;font-weight:400;color:var(--paper-dim);
     padding:14px 22px 8px;
+    display:flex;justify-content:space-between;align-items:center;
   }
+  .sidebar h2 .new-btn{
+    background:transparent;border:1px solid var(--paper-faint);color:var(--paper-dim);
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:0.18em;
+    padding:3px 10px;border-radius:14px;cursor:pointer;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  .sidebar h2 .new-btn:hover{
+    background:var(--terra);color:var(--paper);border-color:var(--terra);
+  }
+  .story-item.new{
+    color:#ffb88c;font-style:italic;
+  }
+  .story-item.new .title:before{content:"✨ "}
   .story-item{
     display:block;width:100%;text-align:left;
     background:transparent;border:0;color:var(--paper);
@@ -448,11 +462,12 @@ function renderSidebar() {
   sidebarEl.innerHTML = '';
   for (const [cat, label] of [['travel','Travel'], ['portrait','Portrait']]) {
     const h = document.createElement('h2');
-    h.textContent = label + ' (' + state[cat].data.length + ')';
+    h.innerHTML = `<span>${label} (${state[cat].data.length})</span><button class="new-btn" type="button">+ New</button>`;
+    h.querySelector('.new-btn').addEventListener('click', () => createStory(cat));
     sidebarEl.appendChild(h);
     state[cat].data.forEach((s, i) => {
       const btn = document.createElement('button');
-      btn.className = 'story-item';
+      btn.className = 'story-item' + (s._isNew ? ' new' : '');
       btn.dataset.cat = cat;
       btn.dataset.idx = i;
       const title = (s.title?.[0] || '') + ' ' + (s.title?.[1] || '');
@@ -465,6 +480,51 @@ function renderSidebar() {
       sidebarEl.appendChild(btn);
     });
   }
+}
+
+// ─── New story ───────────────────────────────────────────────────────────
+const ROMAN = [['M',1000],['CM',900],['D',500],['CD',400],['C',100],['XC',90],['L',50],['XL',40],['X',10],['IX',9],['V',5],['IV',4],['I',1]];
+function toRoman(n) {
+  let s = ''; for (const [r, v] of ROMAN) while (n >= v) { s += r; n -= v; }
+  return s;
+}
+
+function nextId(cat) {
+  const prefix = cat === 'travel' ? 's' : 'p';
+  let max = 0;
+  for (const s of state[cat].data) {
+    const m = (s.id || '').match(new RegExp(`^${prefix}(\\d+)$`));
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  }
+  return prefix + String(max + 1).padStart(2, '0');
+}
+
+function createStory(cat) {
+  if (state.draft && isDirty()) {
+    if (!confirm('You have unsaved changes on the current story. Discard them and create a new one?')) return;
+  }
+  const id = nextId(cat);
+  const num = toRoman(state[cat].data.length + 1);
+  const today = new Date();
+  const dateStr = String(today.getDate()).padStart(2,'0') + ' · ' + toRoman(today.getMonth() + 1) + ' · ' + String(today.getFullYear()).slice(-2);
+
+  const newStory = {
+    id, num,
+    coverExt: 'jpg',
+    cover: 1,
+    count: 0,
+    date: dateStr,
+    place: 'New place · location',
+    title: ['New story', '<em>title</em>.'],
+    caption: 'Caption goes here. Edit me before saving.',
+    shortPlace: 'New',
+    images: [],
+    _isNew: true,  // local-only marker (stripped on save)
+  };
+  state[cat].data.push(newStory);
+  renderSidebar();
+  selectStory(cat, state[cat].data.length - 1);
+  toast(`Created ${id} — fill it in and Save`);
 }
 
 function selectStory(cat, idx) {
@@ -818,10 +878,13 @@ async function save() {
   const saveBtn = document.getElementById('btn-save');
   const discardBtn = document.getElementById('btn-discard');
 
-  // Build new array with the draft replacing the active story
-  const newArr = state[cat].data.map((s, i) =>
-    i === state.activeIdx ? state.draft : s
-  );
+  // Build new array with the draft replacing the active story, and
+  // strip the internal `_isNew` marker before persisting.
+  const newArr = state[cat].data.map((s, i) => {
+    const src = i === state.activeIdx ? state.draft : s;
+    const { _isNew, ...clean } = src;
+    return clean;
+  });
 
   ss.className = 'status saving';
   ss.textContent = 'Saving…';
@@ -837,11 +900,16 @@ async function save() {
     });
     if (!r.ok) throw new Error(r.error || 'Save failed');
 
-    // Update in-memory state
+    // Update in-memory state (newArr already has _isNew stripped)
     state[cat].data = newArr;
     state[cat].sha = r.sha;
-    state.original = state.draft;
+    state.original = state[cat].data[state.activeIdx];
     state.draft = JSON.parse(JSON.stringify(state.original));
+    renderSidebar();  // refresh sidebar so the ✨ "new" badge clears once saved
+    // Restore selection highlight that renderSidebar wiped
+    document.querySelectorAll('.story-item').forEach(b => {
+      b.classList.toggle('active', b.dataset.cat === state.activeCategory && +b.dataset.idx === state.activeIdx);
+    });
 
     ss.className = 'status saved';
     ss.textContent = 'Saved · commit ' + (r.commit || '').slice(0,7);
