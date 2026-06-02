@@ -46,32 +46,8 @@
     ]
   },
   {
-    "id": "p03",
-    "num": "III",
-    "coverExt": "jpg",
-    "cover": 1,
-    "count": 7,
-    "date": "19 · IV · 26",
-    "place": "Loonse en Drunense Duinen · NL",
-    "title": [
-      "Self-portrait,",
-      "in <em>the dunes</em>."
-    ],
-    "caption": "A knit sweater laid across sand that has been here longer than language. Loonse en Drunense Duinen, on a quiet afternoon.",
-    "shortPlace": "In the dunes",
-    "images": [
-      "1.jpg",
-      "2.jpg",
-      "3.jpg",
-      "4.jpg",
-      "5.jpg",
-      "6.jpg",
-      "7.jpg"
-    ]
-  },
-  {
     "id": "p05",
-    "num": "IV",
+    "num": "III",
     "coverExt": "jpg",
     "cover": 13,
     "count": 13,
@@ -100,6 +76,30 @@
     ],
     "hiddenInGallery": [
       "1-2.jpg"
+    ]
+  },
+  {
+    "id": "p03",
+    "num": "IV",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 7,
+    "date": "19 · IV · 26",
+    "place": "Loonse en Drunense Duinen · NL",
+    "title": [
+      "Self-portrait,",
+      "in <em>the dunes</em>."
+    ],
+    "caption": "A knit sweater laid across sand that has been here longer than language. Loonse en Drunense Duinen, on a quiet afternoon.",
+    "shortPlace": "In the dunes",
+    "images": [
+      "1.jpg",
+      "2.jpg",
+      "3.jpg",
+      "4.jpg",
+      "5.jpg",
+      "6.jpg",
+      "7.jpg"
     ]
   }
 ]
