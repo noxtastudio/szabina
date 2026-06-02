@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Admin smoketest</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, monospace; max-width: 720px; margin: 40px auto; padding: 0 20px; background: #111; color: #ddd; }
+  h1 { font-size: 18px; margin-bottom: 24px; }
+  label { display: block; margin-bottom: 16px; }
+  input[type=password] { width: 100%; padding: 10px; font: inherit; background: #222; color: #fff; border: 1px solid #444; border-radius: 6px; }
+  button { padding: 10px 18px; font: inherit; background: #2a6; color: #fff; border: 0; border-radius: 6px; cursor: pointer; margin-right: 8px; }
+  button:hover { background: #381; }
+  pre { background: #0a0a0a; border: 1px solid #333; border-radius: 6px; padding: 16px; overflow: auto; max-height: 60vh; }
+  .ok { color: #6f6; }
+  .fail { color: #f66; }
+</style>
+</head>
+<body>
+<h1>Admin function smoketest</h1>
+<label>Password<br><input id="pw" type="password" autocomplete="off"></label>
+<button onclick="test('login')">Test login</button>
+<button onclick="test('read','data/travel.json')">Read travel.json</button>
+<button onclick="test('read','data/portrait.json')">Read portrait.json</button>
+<pre id="out">Output will appear here…</pre>
+
+<script>
+async function test(action, path) {
+  const out = document.getElementById('out');
+  const password = document.getElementById('pw').value;
+  if (!password) { out.textContent = 'Enter password first.'; return; }
+  out.textContent = 'Running ' + action + '...';
+  try {
+    const body = { password, action };
+    if (path) body.path = path;
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json();
+    // Summarize big responses so the page doesn't choke on 22 stories
+    let summary = json;
+    if (json.data && Array.isArray(json.data)) {
+      summary = {
+        ok: json.ok,
+        sha: json.sha,
+        count: json.data.length,
+        ids: json.data.map(s => s.id),
+        firstStory: json.data[0],
+      };
+    }
+    out.innerHTML = '<span class="' + (json.ok ? 'ok' : 'fail') + '">HTTP ' + res.status + '</span>\n\n' +
+                    JSON.stringify(summary, null, 2);
+  } catch (err) {
+    out.innerHTML = '<span class="fail">ERROR</span>\n\n' + err.message;
+  }
+}
+</script>
+</body>
+</html>
