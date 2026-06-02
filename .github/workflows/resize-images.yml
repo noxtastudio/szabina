@@ -102,10 +102,27 @@ jobs:
         run: |
           git config user.name  "auto-resize-bot"
           git config user.email "bot@noxta.studio"
-          if [ -n "$(git status --porcelain images/)" ]; then
-            git add images/
-            git commit -m "[auto-resize] shrink oversized uploads"
-            git push
-          else
+          if [ -z "$(git status --porcelain images/)" ]; then
             echo "No diff after resize — nothing to commit."
+            exit 0
           fi
+          git add images/
+          git commit -m "[auto-resize] shrink oversized uploads"
+
+          # Retry push with rebase up to 5 times — admin commits can land
+          # while this action is running, leaving us with a stale main.
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then
+              echo "Pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "Push $attempt rejected; fetch+rebase and retry…"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "Rebase failed; aborting."
+              git rebase --abort || true
+              exit 1
+            fi
+          done
+          echo "Push still failing after 5 attempts." >&2
+          exit 1
