@@ -67,8 +67,18 @@
   .login .err{color:var(--err);font-size:13px;font-style:italic;min-height:1.4em}
 
   /* ───────── App layout (after login) ───────── */
-  .app{display:none;height:100vh;grid-template-rows:auto 1fr;grid-template-columns:320px 1fr}
+  .app{display:none;height:100vh;
+    grid-template-columns:320px 1fr;
+    grid-template-rows:auto auto 1fr;
+    grid-template-areas:
+      "topbar topbar"
+      "sidebar savebar"
+      "sidebar editor";
+  }
   .app.live{display:grid}
+  .topbar{grid-area:topbar}
+  .sidebar{grid-area:sidebar}
+  .editor{grid-area:editor}
 
   .topbar{
     grid-column:1/-1;
@@ -162,13 +172,14 @@
 
   /* ───── Edit form ───── */
   .savebar{
-    position:sticky;top:0;z-index:5;
-    margin:-32px -48px 32px;padding:16px 48px;
-    background:#1a0c05;
+    grid-area:savebar;
+    display:none;          /* hidden until a story is selected */
+    justify-content:space-between;align-items:center;gap:14px;
+    padding:14px 48px;
+    background:rgba(0,0,0,0.35);
     border-bottom:1px solid var(--paper-faint);
-    box-shadow:0 8px 18px -8px rgba(0,0,0,0.6);
-    display:flex;justify-content:space-between;align-items:center;gap:14px;
   }
+  .savebar.live{display:flex}
   .savebar .status{color:var(--paper-dim);font-size:13px;font-style:italic}
   .savebar .status.dirty{color:var(--warn)}
   .savebar .status.saving{color:var(--paper-dim)}
@@ -300,6 +311,13 @@
     </div>
   </header>
   <aside class="sidebar" id="sidebar"></aside>
+  <div class="savebar" id="savebar">
+    <span class="status" id="savestatus">No changes</span>
+    <div class="btns">
+      <button id="btn-discard" type="button">Discard</button>
+      <button class="save" id="btn-save" type="button">Save</button>
+    </div>
+  </div>
   <main class="editor empty" id="editor">Pick a story on the left.</main>
 </div>
 
@@ -436,14 +454,6 @@ function renderEditor() {
   const title1 = s.title?.[1] || '';
 
   editorEl.innerHTML = `
-    <div class="savebar">
-      <span class="status" id="savestatus">Loaded — ${s.id}</span>
-      <div class="btns">
-        <button id="btn-discard" type="button">Discard</button>
-        <button class="save" id="btn-save" type="button">Save</button>
-      </div>
-    </div>
-
     <form class="form" id="editform" autocomplete="off">
       <div class="field-row">
         <div class="field">
@@ -512,11 +522,15 @@ function renderEditor() {
     input.value = decodeEntities(raw || '');
     input.addEventListener('input', onFieldChange);
   });
-  document.getElementById('btn-save').addEventListener('click', save);
-  document.getElementById('btn-discard').addEventListener('click', discard);
+  // Savebar is persistent in DOM — reveal it now
+  document.getElementById('savebar').classList.add('live');
   refreshPreview();
   refreshSavebar();
 }
+
+// Wire savebar buttons once at startup (delegated to global handlers)
+document.getElementById('btn-save').addEventListener('click', save);
+document.getElementById('btn-discard').addEventListener('click', discard);
 
 // Browser-native HTML entity decoder — turns "I&rsquo;m" into "I'm" for editing
 function decodeEntities(s) {
