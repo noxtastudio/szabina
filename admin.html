@@ -159,6 +159,84 @@
     display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
     gap:12px;
   }
+
+  /* ───── Edit form ───── */
+  .savebar{
+    position:sticky;top:0;z-index:5;
+    margin:-32px -48px 24px;padding:14px 48px;
+    background:rgba(10,5,0,0.85);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--paper-faint);
+    display:flex;justify-content:space-between;align-items:center;gap:14px;
+  }
+  .savebar .status{color:var(--paper-dim);font-size:13px;font-style:italic}
+  .savebar .status.dirty{color:var(--warn)}
+  .savebar .status.saving{color:var(--paper-dim)}
+  .savebar .status.saved{color:var(--ok)}
+  .savebar .status.err{color:var(--err)}
+  .savebar .btns{display:flex;gap:8px}
+  .savebar button{
+    padding:8px 18px;font-family:inherit;font-size:12px;
+    border:1px solid var(--paper-faint);border-radius:6px;cursor:pointer;
+    background:transparent;color:var(--paper);
+    letter-spacing:0.18em;text-transform:uppercase;
+    transition:background .15s,border-color .15s,color .15s;
+  }
+  .savebar button:hover:not(:disabled){background:rgba(250,242,224,0.08)}
+  .savebar button.save{background:var(--terra);border-color:var(--terra)}
+  .savebar button.save:hover:not(:disabled){background:var(--terra-deep);border-color:var(--terra-deep)}
+  .savebar button:disabled{opacity:.4;cursor:not-allowed}
+
+  .form{display:flex;flex-direction:column;gap:18px;margin-bottom:32px}
+  .form .field{display:flex;flex-direction:column;gap:6px}
+  .form .field-row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .form label{
+    color:var(--paper-dim);text-transform:uppercase;letter-spacing:0.18em;
+    font-family:"IBM Plex Mono",monospace;font-size:10px;
+  }
+  .form input, .form textarea{
+    background:rgba(250,242,224,0.04);
+    border:1px solid var(--paper-faint);border-radius:8px;
+    color:var(--paper);font-family:inherit;
+    padding:12px 14px;
+    transition:border-color .15s,background .15s;
+  }
+  .form input:focus, .form textarea:focus{
+    outline:0;border-color:var(--terra);background:rgba(250,242,224,0.08);
+  }
+  .form textarea{resize:vertical;min-height:90px;font-size:17px;font-style:italic;line-height:1.5}
+  .form input.big{font-size:28px;font-weight:300;line-height:1.1;letter-spacing:-0.01em;padding:14px 16px}
+  .form .hint{
+    color:var(--paper-dim);font-size:11px;font-style:italic;
+    font-family:"IBM Plex Mono",monospace;letter-spacing:0;
+  }
+  .form .hint code{
+    background:rgba(250,242,224,0.08);padding:1px 5px;border-radius:3px;
+    font-size:10px;color:#ffb88c;
+  }
+
+  .preview-wrap{
+    border-top:1px solid var(--paper-faint);
+    padding-top:24px;margin-bottom:32px;
+  }
+  .preview-wrap > .lbl{
+    color:var(--paper-dim);text-transform:uppercase;letter-spacing:0.18em;
+    font-family:"IBM Plex Mono",monospace;font-size:10px;
+    margin-bottom:12px;
+  }
+  .preview{
+    background:rgba(250,242,224,0.03);
+    border-radius:10px;padding:24px;
+  }
+  .preview h2{
+    font-weight:300;font-size:clamp(28px,3vw,42px);line-height:1;
+    letter-spacing:-0.015em;margin-bottom:14px;
+  }
+  .preview h2 em{font-style:italic;color:#ffb88c}
+  .preview .caption{
+    font-style:italic;font-size:17px;line-height:1.55;color:var(--paper-dim);
+    max-width:60ch;
+  }
   .editor .images h3{
     grid-column:1/-1;
     color:var(--paper-dim);text-transform:uppercase;letter-spacing:0.18em;
@@ -326,37 +404,96 @@ function renderSidebar() {
 }
 
 function selectStory(cat, idx) {
+  // Warn if dirty before switching
+  if (state.draft && isDirty()) {
+    if (!confirm('You have unsaved changes. Discard them?')) return;
+  }
   state.activeCategory = cat;
   state.activeIdx = idx;
-  // Highlight in sidebar
+  // Clone the story so edits don't mutate the source until Save
+  const original = state[cat].data[idx];
+  state.draft = JSON.parse(JSON.stringify(original));
+  state.original = original;
+
   document.querySelectorAll('.story-item').forEach(b => {
     b.classList.toggle('active', b.dataset.cat === cat && +b.dataset.idx === idx);
   });
   renderEditor();
 }
 
+function isDirty() {
+  if (!state.draft || !state.original) return false;
+  return JSON.stringify(state.draft) !== JSON.stringify(state.original);
+}
+
 function renderEditor() {
-  const s = state[state.activeCategory].data[state.activeIdx];
+  const s = state.draft;
   editorEl.classList.remove('empty');
   const folder = s.id;
   const images = s.images || [];
   const coverIdx = (s.cover || 1) - 1;
+  const title0 = s.title?.[0] || '';
+  const title1 = s.title?.[1] || '';
 
   editorEl.innerHTML = `
-    <div class="row">
-      <span class="num">${s.num || ''}</span>
-      <span class="place">${s.place || ''} · ${s.date || ''}</span>
+    <div class="savebar">
+      <span class="status" id="savestatus">Loaded — ${s.id}</span>
+      <div class="btns">
+        <button id="btn-discard" type="button">Discard</button>
+        <button class="save" id="btn-save" type="button">Save</button>
+      </div>
     </div>
-    <h2>${(s.title?.[0] || '')} ${(s.title?.[1] || '')}</h2>
-    <p class="caption">${s.caption || ''}</p>
+
+    <form class="form" id="editform" autocomplete="off">
+      <div class="field-row">
+        <div class="field">
+          <label for="f-place">Place</label>
+          <input id="f-place" data-path="place" value="${escAttr(s.place)}">
+        </div>
+        <div class="field">
+          <label for="f-date">Date</label>
+          <input id="f-date" data-path="date" value="${escAttr(s.date)}">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-shortPlace">Short place <span class="hint">(shown in side rail)</span></label>
+        <input id="f-shortPlace" data-path="shortPlace" value="${escAttr(s.shortPlace)}">
+      </div>
+
+      <div class="field">
+        <label for="f-title0">Title — line 1</label>
+        <input id="f-title0" class="big" data-path="title.0" value="${escAttr(title0)}">
+      </div>
+
+      <div class="field">
+        <label for="f-title1">Title — line 2 <span class="hint">use <code>&lt;em&gt;word&lt;/em&gt;</code> for italic</span></label>
+        <input id="f-title1" class="big" data-path="title.1" value="${escAttr(title1)}">
+      </div>
+
+      <div class="field">
+        <label for="f-caption">Caption</label>
+        <textarea id="f-caption" data-path="caption" rows="4">${escHtml(s.caption || '')}</textarea>
+      </div>
+    </form>
+
+    <div class="preview-wrap">
+      <div class="lbl">Preview — how the cover will read</div>
+      <div class="preview" id="preview">
+        <h2 id="pv-title"></h2>
+        <p class="caption" id="pv-caption"></p>
+      </div>
+    </div>
+
     <dl class="meta-grid">
       <div><dt>id</dt><dd>${s.id}</dd></div>
-      <div><dt>short place</dt><dd>${s.shortPlace || '—'}</dd></div>
       <div><dt>image count</dt><dd>${images.length}</dd></div>
       <div><dt>cover</dt><dd>${images[coverIdx] || '—'}</dd></div>
+      <div><dt>category</dt><dd>${state.activeCategory}</dd></div>
     </dl>
+
     <div class="images">
-      <h3>Photos (${images.length})</h3>
+      <h3>Photos (${images.length}) — editing coming in Phase 3C</h3>
       ${images.map((fn, i) => `
         <div class="thumb${i === coverIdx ? ' cover' : ''}" style="background-image:url('images/${folder}/${fn}')">
           ${i === coverIdx ? '<span class="badge">COVER</span>' : ''}
@@ -365,6 +502,119 @@ function renderEditor() {
       `).join('')}
     </div>
   `;
+
+  // Wire inputs → update draft + live preview
+  editorEl.querySelectorAll('[data-path]').forEach(input => {
+    input.addEventListener('input', onFieldChange);
+  });
+  document.getElementById('btn-save').addEventListener('click', save);
+  document.getElementById('btn-discard').addEventListener('click', discard);
+  refreshPreview();
+  refreshSavebar();
+}
+
+function onFieldChange(e) {
+  const path = e.target.dataset.path;
+  const val = e.target.value;
+  // Path supports "title.0" / "title.1" for the two-line title
+  if (path.includes('.')) {
+    const [k, idx] = path.split('.');
+    if (!Array.isArray(state.draft[k])) state.draft[k] = [];
+    state.draft[k][+idx] = val;
+  } else {
+    state.draft[path] = val;
+  }
+  refreshPreview();
+  refreshSavebar();
+  // Also update the sidebar entry's visible title/place live
+  updateSidebarItem();
+}
+
+function refreshPreview() {
+  const s = state.draft;
+  const pvTitle = document.getElementById('pv-title');
+  const pvCap = document.getElementById('pv-caption');
+  if (!pvTitle) return;
+  pvTitle.innerHTML = (s.title?.[0] || '') + ' ' + (s.title?.[1] || '');
+  pvCap.innerHTML = s.caption || '';
+}
+
+function refreshSavebar() {
+  const dirty = isDirty();
+  const ss = document.getElementById('savestatus');
+  const saveBtn = document.getElementById('btn-save');
+  const discardBtn = document.getElementById('btn-discard');
+  if (!ss) return;
+  ss.className = 'status' + (dirty ? ' dirty' : '');
+  ss.textContent = dirty ? 'Unsaved changes' : 'No changes';
+  saveBtn.disabled = !dirty;
+  discardBtn.disabled = !dirty;
+}
+
+function updateSidebarItem() {
+  const s = state.draft;
+  const btn = document.querySelector(`.story-item[data-cat="${state.activeCategory}"][data-idx="${state.activeIdx}"]`);
+  if (!btn) return;
+  btn.querySelector('.title').innerHTML = (s.title?.[0] || '') + ' ' + (s.title?.[1] || '');
+  btn.querySelector('.sub').textContent = s.shortPlace || '';
+}
+
+function discard() {
+  state.draft = JSON.parse(JSON.stringify(state.original));
+  renderEditor();
+  toast('Discarded');
+}
+
+async function save() {
+  const cat = state.activeCategory;
+  const ss = document.getElementById('savestatus');
+  const saveBtn = document.getElementById('btn-save');
+  const discardBtn = document.getElementById('btn-discard');
+
+  // Build new array with the draft replacing the active story
+  const newArr = state[cat].data.map((s, i) =>
+    i === state.activeIdx ? state.draft : s
+  );
+
+  ss.className = 'status saving';
+  ss.textContent = 'Saving…';
+  saveBtn.disabled = true;
+  discardBtn.disabled = true;
+
+  try {
+    const r = await api('write-json', {
+      path: 'data/' + cat + '.json',
+      content: newArr,
+      sha: state[cat].sha,
+      message: 'admin: edit ' + state.draft.id,
+    });
+    if (!r.ok) throw new Error(r.error || 'Save failed');
+
+    // Update in-memory state
+    state[cat].data = newArr;
+    state[cat].sha = r.sha;
+    state.original = state.draft;
+    state.draft = JSON.parse(JSON.stringify(state.original));
+
+    ss.className = 'status saved';
+    ss.textContent = 'Saved · commit ' + (r.commit || '').slice(0,7);
+    setTimeout(refreshSavebar, 2500);
+    toast('Saved');
+  } catch (err) {
+    ss.className = 'status err';
+    ss.textContent = 'Error: ' + err.message;
+    saveBtn.disabled = false;
+    discardBtn.disabled = false;
+    toast(err.message, true);
+  }
+}
+
+// ─── Escapers for attribute and text content ─────────────────────────────
+function escAttr(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
 }
 
 // ─── Toast ───────────────────────────────────────────────────────────────
