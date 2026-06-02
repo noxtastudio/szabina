@@ -1,8 +1,7 @@
 name: Resize uploaded images
 
-# Triggers when anything under images/ changes on main.
-# Skips itself: the action's own commit message has [auto-resize] so the guard below
-# prevents an infinite loop.
+# Triggers when files under images/ change on main.
+# Loop guard: the action's own commit message has [auto-resize].
 on:
   push:
     branches: [main]
@@ -20,13 +19,19 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
         with:
-          # We need at least 2 commits so we can diff against HEAD^
           fetch-depth: 2
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install sharp
+        run: npm init -y >/dev/null && npm install --no-save sharp@0.33.5
 
       - name: Find images changed in this commit
         id: changed
         run: |
-          # New or modified image files (skip deletions)
           git diff --diff-filter=AM --name-only HEAD^ HEAD \
             | grep -Ei '^images/.*\.(jpe?g|png|webp)$' \
             > /tmp/changed.txt || true
@@ -34,58 +39,63 @@ jobs:
           cat /tmp/changed.txt || true
           echo "count=$(wc -l < /tmp/changed.txt)" >> "$GITHUB_OUTPUT"
 
-      - name: Show tooling versions
-        run: |
-          echo "=== ImageMagick ==="
-          magick -version | head -3 || convert -version | head -3 || echo "no IM found"
-          echo "=== file ==="
-          which file && file --version | head -1
-
       - name: Resize oversized images
         if: steps.changed.outputs.count != '0'
         id: resize
         run: |
-          MAX_W=2000
-          MAX_BYTES=$((1024 * 1024))   # 1 MB
-          changed_any=0
-          # Prefer `magick` (IM7) over `convert`; fall back if needed.
-          if command -v magick >/dev/null 2>&1; then IM="magick"; else IM="convert"; fi
-          echo "Using ImageMagick command: $IM"
+          node <<'EOF'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const sharp = require('sharp');
 
-          while IFS= read -r file; do
-            [ -z "$file" ] && continue
-            if [ ! -f "$file" ]; then
-              echo "Skipping $file — file no longer exists"
-              continue
-            fi
+          const MAX_W = 2000;
+          const MAX_BYTES = 1024 * 1024; // 1 MB
 
-            # identify with [0] to grab first frame in case of multipage assets
-            width=$($IM identify -format "%w" "${file}[0]" 2>/dev/null || true)
-            width=${width:-0}
-            size=$(stat -c%s "$file" 2>/dev/null || echo 0)
+          const files = fs.readFileSync('/tmp/changed.txt', 'utf8')
+            .split('\n').filter(Boolean);
 
-            echo "Considering $file (width=${width}px, size=${size} bytes)"
-            if ! [[ "$width" =~ ^[0-9]+$ ]] || ! [[ "$size" =~ ^[0-9]+$ ]]; then
-              echo "  -> couldn't parse dimensions/size, skipping"
-              continue
-            fi
-
-            if [ "$width" -gt "$MAX_W" ] || [ "$size" -gt "$MAX_BYTES" ]; then
-              echo "  -> resizing to ${MAX_W}px wide, quality 88, strip EXIF"
-              if $IM "$file" -auto-orient -resize "${MAX_W}x>" -quality 88 -strip "$file"; then
-                new_w=$($IM identify -format "%w" "${file}[0]" 2>/dev/null || echo 0)
-                new_size=$(stat -c%s "$file" 2>/dev/null || echo 0)
-                echo "  -> done: ${new_w}px, ${new_size} bytes"
-                changed_any=1
-              else
-                echo "  -> resize FAILED for $file (exit $?), continuing"
-              fi
-            else
-              echo "  -> under thresholds, skipping"
-            fi
-          done < /tmp/changed.txt
-          echo "changed_any=$changed_any" >> "$GITHUB_OUTPUT"
-          echo "Final changed_any=$changed_any"
+          (async () => {
+            let changedAny = false;
+            for (const file of files) {
+              if (!fs.existsSync(file)) {
+                console.log(`skip ${file} (no longer exists)`);
+                continue;
+              }
+              try {
+                const size = fs.statSync(file).size;
+                const meta = await sharp(file).metadata();
+                const width = meta.width || 0;
+                console.log(`consider ${file} (width=${width}px, size=${size}B)`);
+                if (width <= MAX_W && size <= MAX_BYTES) {
+                  console.log(`  -> under thresholds, skip`);
+                  continue;
+                }
+                // Pipeline: rotate based on EXIF, resize to max width, strip EXIF.
+                const ext = path.extname(file).toLowerCase();
+                let pipeline = sharp(file).rotate().resize({ width: MAX_W, withoutEnlargement: true });
+                if (ext === '.jpg' || ext === '.jpeg') {
+                  pipeline = pipeline.jpeg({ quality: 88, mozjpeg: true });
+                } else if (ext === '.png') {
+                  pipeline = pipeline.png({ compressionLevel: 9 });
+                } else if (ext === '.webp') {
+                  pipeline = pipeline.webp({ quality: 88 });
+                }
+                const tmp = file + '.tmp';
+                await pipeline.toFile(tmp);
+                fs.renameSync(tmp, file);
+                const newSize = fs.statSync(file).size;
+                const newMeta = await sharp(file).metadata();
+                console.log(`  -> done: ${newMeta.width}px, ${newSize}B`);
+                changedAny = true;
+              } catch (err) {
+                console.log(`  -> ERROR on ${file}: ${err.message}`);
+              }
+            }
+            // Write step output for the next step to consume
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `changed_any=${changedAny ? 1 : 0}\n`);
+            console.log(`changed_any=${changedAny ? 1 : 0}`);
+          })().catch(err => { console.error(err); process.exit(1); });
+          EOF
 
       - name: Commit resized images
         if: steps.resize.outputs.changed_any == '1'

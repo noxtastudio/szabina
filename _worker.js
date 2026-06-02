@@ -164,6 +164,8 @@ async function actDeleteFile({ path, message }, env) {
   const url = `${GH}/repos/${env.GITHUB_REPO}/contents/${encodeURI(path)}`;
 
   const cur = await fetch(`${url}?ref=main`, { headers: ghHeaders(env) });
+  // Idempotent: if the file is already gone, treat the delete as already done.
+  if (cur.status === 404) return json({ ok: true, alreadyGone: true });
   if (!cur.ok) throw new Error(`GH get-sha ${cur.status}: ${await cur.text()}`);
   const sha = (await cur.json()).sha;
 
