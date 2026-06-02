@@ -495,17 +495,23 @@
     sec.dataset.idx = i;
     sec.dataset.screenLabel = String(i+1).padStart(2,'0') + ' ' + s.shortPlace;
 
-    // build slide markup
+    // build slide markup from s.images (the JSON's source-of-truth list).
+    // Falls back to legacy `${n}.${ext}` construction if images[] is absent.
+    const imgList = s.images && s.images.length
+      ? s.images
+      : Array.from({length: s.count}, (_, i) => `${i+1}.${i === 0 ? (s.coverExt || 'webp') : 'jpg'}`);
     let slides = '';
     let dots = '';
-    for (let n = 1; n <= s.count; n++) {
-      slides += `<div class="slide" data-slide="${n-1}"><div class="frame"><img data-src="images/${s.id}/${n}.${n === 1 ? (s.coverExt || 'webp') : 'jpg'}" alt="${s.shortPlace} ${n}"></div></div>`;
+    imgList.forEach((fn, n0) => {
+      const n = n0 + 1;
+      slides += `<div class="slide" data-slide="${n-1}"><div class="frame"><img data-src="images/${s.id}/${fn}" alt="${s.shortPlace} ${n}"></div></div>`;
       dots += `<button class="dot${n===1?' active':''}" data-go="${n-1}" aria-label="Image ${n}"></button>`;
-    }
+    });
+    const coverFile = imgList[(s.cover || 1) - 1] || imgList[0];
 
     sec.innerHTML = `
       <div class="cover" data-toggle="${s.id}">
-        <div class="photo" style="background-image:url('images/${s.id}/${s.cover}.${s.coverExt || 'webp'}')"></div>
+        <div class="photo" style="background-image:url('images/${s.id}/${coverFile}')"></div>
         <div class="veil"></div>
         <div class="veil-left"></div>
         <div class="text">
@@ -522,7 +528,7 @@
           </div>
           <div class="cta">
             <button class="open">
-              <span>View story · ${s.count} pictures</span>
+              <span>View story · ${imgList.length} pictures</span>
               <span class="arrow">→</span>
             </button>
           </div>
@@ -553,7 +559,7 @@
               </div>
               <div class="dots">${dots}</div>
             </div>
-            <div class="counter"><span class="cur">1</span><span class="of">/</span><span class="tot">${s.count}</span></div>
+            <div class="counter"><span class="cur">1</span><span class="of">/</span><span class="tot">${imgList.length}</span></div>
             <div class="place">${s.shortPlace}</div>
           </div>
         </div>
