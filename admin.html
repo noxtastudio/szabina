@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Szabina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1a0c05;
+    --paper:#faf2e0;
+    --paper-dim:rgba(250,242,224,0.65);
+    --paper-faint:rgba(250,242,224,0.12);
+    --terra:#b8401b;
+    --terra-deep:#7a2a10;
+    --ok:#6f9d5d;
+    --warn:#c0833a;
+    --err:#c44a3e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--paper);
+    font-family:"Cormorant Garamond", Georgia, serif;font-weight:400;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:"IBM Plex Mono", ui-monospace, monospace}
+  .sc{font-family:"IBM Plex Mono", monospace;text-transform:uppercase;letter-spacing:0.22em;font-size:11px}
+
+  /* ───────── Login screen ───────── */
+  .login{
+    min-height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .login form{
+    width:100%;max-width:380px;
+    display:flex;flex-direction:column;gap:18px;
+  }
+  .login .eyebrow{color:var(--terra);margin-bottom:6px}
+  .login h1{
+    font-weight:300;font-size:clamp(36px,5vw,52px);
+    line-height:1;letter-spacing:-0.015em;
+    margin-bottom:8px;
+  }
+  .login h1 em{font-style:italic;color:var(--terra-deep)}
+  .login p{color:var(--paper-dim);font-style:italic;font-size:17px;line-height:1.5;margin-bottom:8px}
+  .login input{
+    width:100%;padding:14px 16px;
+    background:rgba(250,242,224,0.05);
+    border:1px solid var(--paper-faint);
+    border-radius:10px;
+    color:var(--paper);font-family:inherit;font-size:17px;
+    transition:border-color .2s,background .2s;
+  }
+  .login input:focus{outline:0;border-color:var(--terra);background:rgba(250,242,224,0.08)}
+  .login button{
+    padding:14px 22px;font-family:inherit;font-size:14px;
+    background:var(--terra);color:var(--paper);
+    border:0;border-radius:10px;cursor:pointer;
+    letter-spacing:0.2em;text-transform:uppercase;
+    transition:background .2s;
+  }
+  .login button:hover{background:var(--terra-deep)}
+  .login .err{color:var(--err);font-size:13px;font-style:italic;min-height:1.4em}
+
+  /* ───────── App layout (after login) ───────── */
+  .app{display:none;height:100vh;grid-template-rows:auto 1fr;grid-template-columns:320px 1fr}
+  .app.live{display:grid}
+
+  .topbar{
+    grid-column:1/-1;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 22px;
+    border-bottom:1px solid var(--paper-faint);
+    background:rgba(0,0,0,0.25);
+  }
+  .topbar .brand{font-size:14px;letter-spacing:0.32em;text-transform:uppercase;font-weight:500}
+  .topbar .brand em{font-style:italic;color:var(--terra);text-transform:none;letter-spacing:0;font-weight:300;font-size:18px;margin-left:8px}
+  .topbar .actions{display:flex;gap:8px;align-items:center}
+  .topbar a, .topbar button{
+    color:var(--paper-dim);background:transparent;border:0;
+    font-family:inherit;font-size:13px;cursor:pointer;
+    padding:6px 12px;border-radius:6px;
+    transition:color .2s,background .2s;
+  }
+  .topbar a:hover, .topbar button:hover{color:var(--paper);background:rgba(250,242,224,0.06)}
+
+  /* Story list (left) */
+  .sidebar{
+    border-right:1px solid var(--paper-faint);
+    overflow-y:auto;
+    padding:8px 0;
+  }
+  .sidebar h2{
+    font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:0.22em;
+    font-size:10px;font-weight:400;color:var(--paper-dim);
+    padding:14px 22px 8px;
+  }
+  .story-item{
+    display:block;width:100%;text-align:left;
+    background:transparent;border:0;color:var(--paper);
+    font-family:inherit;cursor:pointer;
+    padding:10px 22px;
+    border-left:2px solid transparent;
+    transition:background .15s,border-color .15s;
+  }
+  .story-item:hover{background:rgba(250,242,224,0.04)}
+  .story-item.active{background:rgba(184,64,27,0.12);border-left-color:var(--terra)}
+  .story-item .num{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--paper-dim);
+    letter-spacing:0.18em;margin-right:10px;
+  }
+  .story-item .title{font-size:17px;line-height:1.25}
+  .story-item .title em{font-style:italic;color:#ffb88c}
+  .story-item .sub{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--paper-dim);
+    letter-spacing:0.1em;margin-top:4px;text-transform:uppercase;
+  }
+
+  /* Editor (right) */
+  .editor{
+    overflow-y:auto;
+    padding:32px 48px;
+  }
+  .editor.empty{
+    display:flex;align-items:center;justify-content:center;
+    color:var(--paper-dim);font-style:italic;font-size:19px;
+  }
+  .editor .row{display:flex;gap:24px;align-items:baseline;margin-bottom:20px}
+  .editor .row .num{
+    font-family:"Cormorant Garamond",serif;font-style:italic;
+    font-size:48px;color:var(--terra);line-height:1;
+  }
+  .editor .row .place{color:var(--paper-dim);font-size:14px;letter-spacing:0.18em;text-transform:uppercase;font-family:"IBM Plex Mono",monospace}
+  .editor h2{
+    font-weight:300;font-size:clamp(36px,4vw,56px);line-height:1;
+    letter-spacing:-0.015em;margin-bottom:18px;
+  }
+  .editor h2 em{font-style:italic;color:#ffb88c}
+  .editor .caption{
+    font-style:italic;font-size:19px;line-height:1.55;color:var(--paper-dim);
+    max-width:60ch;margin-bottom:32px;
+  }
+  .editor .meta-grid{
+    display:grid;grid-template-columns:repeat(2,1fr);gap:18px 32px;
+    margin-bottom:28px;font-size:14px;
+    border-top:1px solid var(--paper-faint);padding-top:24px;
+  }
+  .editor .meta-grid dt{
+    color:var(--paper-dim);text-transform:uppercase;letter-spacing:0.18em;
+    font-family:"IBM Plex Mono",monospace;font-size:10px;
+  }
+  .editor .meta-grid dd{font-family:"IBM Plex Mono",monospace;font-size:13px;margin-top:4px}
+  .editor .images{
+    border-top:1px solid var(--paper-faint);padding-top:24px;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+    gap:12px;
+  }
+  .editor .images h3{
+    grid-column:1/-1;
+    color:var(--paper-dim);text-transform:uppercase;letter-spacing:0.18em;
+    font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:400;
+    margin-bottom:4px;
+  }
+  .editor .images .thumb{
+    aspect-ratio:1;position:relative;
+    background:#000 center/cover no-repeat;
+    border-radius:6px;
+    border:1px solid var(--paper-faint);
+  }
+  .editor .images .thumb.cover{border-color:var(--terra);border-width:2px}
+  .editor .images .thumb .badge{
+    position:absolute;top:6px;left:6px;
+    background:var(--terra);color:var(--paper);
+    font-family:"IBM Plex Mono",monospace;font-size:9px;
+    padding:2px 6px;border-radius:3px;letter-spacing:0.1em;
+  }
+  .editor .images .thumb .seq{
+    position:absolute;bottom:6px;right:6px;
+    background:rgba(0,0,0,0.6);color:var(--paper);
+    font-family:"IBM Plex Mono",monospace;font-size:10px;
+    padding:2px 6px;border-radius:3px;
+  }
+
+  .toast{
+    position:fixed;bottom:24px;right:24px;
+    padding:14px 22px;border-radius:10px;
+    background:rgba(0,0,0,0.8);border:1px solid var(--paper-faint);
+    color:var(--paper);font-size:13px;
+    opacity:0;transform:translateY(8px);
+    transition:opacity .2s,transform .2s;
+    pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateY(0)}
+  .toast.err{border-color:var(--err);color:var(--err)}
+</style>
+</head>
+<body>
+
+<!-- ───── Login ───── -->
+<section class="login" id="login">
+  <form id="login-form" autocomplete="off">
+    <span class="eyebrow sc">Admin</span>
+    <h1>Welcome <em>back</em>.</h1>
+    <p>Edit stories, photos, and (soon) colors.</p>
+    <input id="pw" type="password" placeholder="Password" autofocus>
+    <button type="submit">Enter</button>
+    <div class="err" id="login-err"></div>
+  </form>
+</section>
+
+<!-- ───── App ───── -->
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand">Szabina<em>admin</em></div>
+    <div class="actions">
+      <a href="/" target="_blank">View site ↗</a>
+      <button id="logout">Sign out</button>
+    </div>
+  </header>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="editor empty" id="editor">Pick a story on the left.</main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Auth + state ────────────────────────────────────────────────────────
+const state = {
+  password: sessionStorage.getItem('admin-pw') || null,
+  travel: null,    // {data, sha}
+  portrait: null,  // {data, sha}
+  activeCategory: null,  // 'travel' | 'portrait'
+  activeIdx: null,
+};
+
+const loginEl = document.getElementById('login');
+const appEl = document.getElementById('app');
+const errEl = document.getElementById('login-err');
+const sidebarEl = document.getElementById('sidebar');
+const editorEl = document.getElementById('editor');
+const toastEl = document.getElementById('toast');
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pw = document.getElementById('pw').value;
+  errEl.textContent = '';
+  try {
+    const r = await api('login', null, pw);
+    if (!r.ok) throw new Error(r.error || 'Login failed');
+    state.password = pw;
+    sessionStorage.setItem('admin-pw', pw);
+    await boot();
+  } catch (err) {
+    errEl.textContent = err.message;
+  }
+});
+
+document.getElementById('logout').addEventListener('click', () => {
+  state.password = null;
+  sessionStorage.removeItem('admin-pw');
+  location.reload();
+});
+
+// On page load: if password is cached, try to use it
+if (state.password) boot().catch(() => {
+  // Cached password didn't work — clear and show login
+  state.password = null;
+  sessionStorage.removeItem('admin-pw');
+});
+
+// ─── API helper ──────────────────────────────────────────────────────────
+async function api(action, payload, pw) {
+  const body = { password: pw ?? state.password, action, ...(payload || {}) };
+  const res = await fetch('/api/admin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+// ─── Boot: load stories, paint sidebar ───────────────────────────────────
+async function boot() {
+  loginEl.style.display = 'none';
+  appEl.classList.add('live');
+
+  toast('Loading stories…');
+  const [t, p] = await Promise.all([
+    api('read', { path: 'data/travel.json' }),
+    api('read', { path: 'data/portrait.json' }),
+  ]);
+  if (!t.ok || !p.ok) throw new Error(t.error || p.error || 'Read failed');
+
+  state.travel = { data: t.data, sha: t.sha };
+  state.portrait = { data: p.data, sha: p.sha };
+
+  renderSidebar();
+  toast('Loaded ' + t.data.length + ' travel + ' + p.data.length + ' portrait stories');
+}
+
+function renderSidebar() {
+  sidebarEl.innerHTML = '';
+  for (const [cat, label] of [['travel','Travel'], ['portrait','Portrait']]) {
+    const h = document.createElement('h2');
+    h.textContent = label + ' (' + state[cat].data.length + ')';
+    sidebarEl.appendChild(h);
+    state[cat].data.forEach((s, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'story-item';
+      btn.dataset.cat = cat;
+      btn.dataset.idx = i;
+      const title = (s.title?.[0] || '') + ' ' + (s.title?.[1] || '');
+      btn.innerHTML = `
+        <span class="num">${s.num || ''}</span>
+        <span class="title">${title}</span>
+        <div class="sub">${s.shortPlace || ''}</div>
+      `;
+      btn.addEventListener('click', () => selectStory(cat, i));
+      sidebarEl.appendChild(btn);
+    });
+  }
+}
+
+function selectStory(cat, idx) {
+  state.activeCategory = cat;
+  state.activeIdx = idx;
+  // Highlight in sidebar
+  document.querySelectorAll('.story-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === cat && +b.dataset.idx === idx);
+  });
+  renderEditor();
+}
+
+function renderEditor() {
+  const s = state[state.activeCategory].data[state.activeIdx];
+  editorEl.classList.remove('empty');
+  const folder = s.id;
+  const images = s.images || [];
+  const coverIdx = (s.cover || 1) - 1;
+
+  editorEl.innerHTML = `
+    <div class="row">
+      <span class="num">${s.num || ''}</span>
+      <span class="place">${s.place || ''} · ${s.date || ''}</span>
+    </div>
+    <h2>${(s.title?.[0] || '')} ${(s.title?.[1] || '')}</h2>
+    <p class="caption">${s.caption || ''}</p>
+    <dl class="meta-grid">
+      <div><dt>id</dt><dd>${s.id}</dd></div>
+      <div><dt>short place</dt><dd>${s.shortPlace || '—'}</dd></div>
+      <div><dt>image count</dt><dd>${images.length}</dd></div>
+      <div><dt>cover</dt><dd>${images[coverIdx] || '—'}</dd></div>
+    </dl>
+    <div class="images">
+      <h3>Photos (${images.length})</h3>
+      ${images.map((fn, i) => `
+        <div class="thumb${i === coverIdx ? ' cover' : ''}" style="background-image:url('images/${folder}/${fn}')">
+          ${i === coverIdx ? '<span class="badge">COVER</span>' : ''}
+          <span class="seq">${String(i+1).padStart(2,'0')}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ─── Toast ───────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg, isErr = false) {
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('err', isErr);
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2400);
+}
+</script>
+</body>
+</html>
