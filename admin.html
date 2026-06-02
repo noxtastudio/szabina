@@ -562,6 +562,27 @@ async function boot() {
 
 function renderSidebar() {
   sidebarEl.innerHTML = '';
+
+  // Theme section first — global, always one entry
+  const themeHeader = document.createElement('h2');
+  themeHeader.innerHTML = '<span>Site theme</span>';
+  sidebarEl.appendChild(themeHeader);
+  const themeBtn = document.createElement('div');
+  themeBtn.className = 'story-item' + (state.activeCategory === 'theme' ? ' active' : '');
+  themeBtn.setAttribute('role', 'button');
+  themeBtn.setAttribute('tabindex', '0');
+  themeBtn.dataset.cat = 'theme';
+  themeBtn.dataset.idx = 0;
+  themeBtn.innerHTML = `
+    <span class="title">Brand palette</span>
+    <div class="sub">${Object.keys(state.theme?.data || {}).length} colors</div>
+  `;
+  themeBtn.addEventListener('click', selectTheme);
+  themeBtn.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectTheme(); }
+  });
+  sidebarEl.appendChild(themeBtn);
+
   for (const [cat, label] of [['travel','Travel'], ['portrait','Portrait']]) {
     const h = document.createElement('h2');
     h.innerHTML = `<span>${label} (${state[cat].data.length})</span><button class="new-btn" type="button">+ New</button>`;
@@ -590,26 +611,6 @@ function renderSidebar() {
       sidebarEl.appendChild(btn);
     });
   }
-
-  // Theme section — one entry, opens the color editor
-  const th = document.createElement('h2');
-  th.innerHTML = '<span>Site theme</span>';
-  sidebarEl.appendChild(th);
-  const themeBtn = document.createElement('div');
-  themeBtn.className = 'story-item' + (state.activeCategory === 'theme' ? ' active' : '');
-  themeBtn.setAttribute('role', 'button');
-  themeBtn.setAttribute('tabindex', '0');
-  themeBtn.dataset.cat = 'theme';
-  themeBtn.dataset.idx = 0;
-  themeBtn.innerHTML = `
-    <span class="title">Brand palette</span>
-    <div class="sub">${Object.keys(state.theme?.data || {}).length} colors</div>
-  `;
-  themeBtn.addEventListener('click', selectTheme);
-  themeBtn.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectTheme(); }
-  });
-  sidebarEl.appendChild(themeBtn);
 }
 
 // ─── New story ───────────────────────────────────────────────────────────
