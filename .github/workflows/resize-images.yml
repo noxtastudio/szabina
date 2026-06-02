@@ -34,34 +34,58 @@ jobs:
           cat /tmp/changed.txt || true
           echo "count=$(wc -l < /tmp/changed.txt)" >> "$GITHUB_OUTPUT"
 
+      - name: Show tooling versions
+        run: |
+          echo "=== ImageMagick ==="
+          magick -version | head -3 || convert -version | head -3 || echo "no IM found"
+          echo "=== file ==="
+          which file && file --version | head -1
+
       - name: Resize oversized images
         if: steps.changed.outputs.count != '0'
+        id: resize
         run: |
-          set -euo pipefail
-          MAX_W=2000          # max width in px
-          MAX_BYTES=$((1024 * 1024))   # 1 MB threshold
+          MAX_W=2000
+          MAX_BYTES=$((1024 * 1024))   # 1 MB
           changed_any=0
+          # Prefer `magick` (IM7) over `convert`; fall back if needed.
+          if command -v magick >/dev/null 2>&1; then IM="magick"; else IM="convert"; fi
+          echo "Using ImageMagick command: $IM"
+
           while IFS= read -r file; do
             [ -z "$file" ] && continue
-            [ -f "$file" ] || continue
+            if [ ! -f "$file" ]; then
+              echo "Skipping $file — file no longer exists"
+              continue
+            fi
 
-            width=$(identify -format "%w" "$file[0]" 2>/dev/null || echo 0)
-            size=$(stat -c%s "$file")
+            # identify with [0] to grab first frame in case of multipage assets
+            width=$($IM identify -format "%w" "${file}[0]" 2>/dev/null || true)
+            width=${width:-0}
+            size=$(stat -c%s "$file" 2>/dev/null || echo 0)
+
+            echo "Considering $file (width=${width}px, size=${size} bytes)"
+            if ! [[ "$width" =~ ^[0-9]+$ ]] || ! [[ "$size" =~ ^[0-9]+$ ]]; then
+              echo "  -> couldn't parse dimensions/size, skipping"
+              continue
+            fi
+
             if [ "$width" -gt "$MAX_W" ] || [ "$size" -gt "$MAX_BYTES" ]; then
-              echo "Resizing $file (was ${width}px, ${size} bytes)"
-              # -resize '2000x>' = only shrink if larger; preserves aspect ratio.
-              # -strip removes EXIF (smaller files, no GPS leak).
-              convert "$file" -auto-orient -resize "${MAX_W}x>" -quality 88 -strip "$file"
-              new_w=$(identify -format "%w" "$file[0]" 2>/dev/null || echo 0)
-              new_size=$(stat -c%s "$file")
-              echo "  -> ${new_w}px, ${new_size} bytes"
-              changed_any=1
+              echo "  -> resizing to ${MAX_W}px wide, quality 88, strip EXIF"
+              if $IM "$file" -auto-orient -resize "${MAX_W}x>" -quality 88 -strip "$file"; then
+                new_w=$($IM identify -format "%w" "${file}[0]" 2>/dev/null || echo 0)
+                new_size=$(stat -c%s "$file" 2>/dev/null || echo 0)
+                echo "  -> done: ${new_w}px, ${new_size} bytes"
+                changed_any=1
+              else
+                echo "  -> resize FAILED for $file (exit $?), continuing"
+              fi
             else
-              echo "Skipping $file (${width}px, ${size} bytes — under thresholds)"
+              echo "  -> under thresholds, skipping"
             fi
           done < /tmp/changed.txt
           echo "changed_any=$changed_any" >> "$GITHUB_OUTPUT"
-        id: resize
+          echo "Final changed_any=$changed_any"
 
       - name: Commit resized images
         if: steps.resize.outputs.changed_any == '1'
