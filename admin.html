@@ -259,20 +259,66 @@
     background:#000 center/cover no-repeat;
     border-radius:6px;
     border:1px solid var(--paper-faint);
+    cursor:grab;
+    transition:transform .15s,border-color .15s,opacity .15s;
   }
+  .editor .images .thumb:hover{border-color:rgba(250,242,224,0.4)}
   .editor .images .thumb.cover{border-color:var(--terra);border-width:2px}
+  .editor .images .thumb.dragging{opacity:.3;cursor:grabbing}
+  .editor .images .thumb.drop-before{box-shadow:inset 3px 0 0 var(--terra)}
+  .editor .images .thumb.drop-after{box-shadow:inset -3px 0 0 var(--terra)}
   .editor .images .thumb .badge{
     position:absolute;top:6px;left:6px;
     background:var(--terra);color:var(--paper);
     font-family:"IBM Plex Mono",monospace;font-size:9px;
     padding:2px 6px;border-radius:3px;letter-spacing:0.1em;
+    pointer-events:none;
   }
   .editor .images .thumb .seq{
     position:absolute;bottom:6px;right:6px;
     background:rgba(0,0,0,0.6);color:var(--paper);
     font-family:"IBM Plex Mono",monospace;font-size:10px;
     padding:2px 6px;border-radius:3px;
+    pointer-events:none;
   }
+  .editor .images .thumb .controls{
+    position:absolute;top:6px;right:6px;
+    display:flex;gap:4px;
+    opacity:0;transition:opacity .15s;
+  }
+  .editor .images .thumb:hover .controls{opacity:1}
+  .editor .images .thumb .controls button{
+    width:26px;height:26px;border-radius:50%;
+    background:rgba(0,0,0,0.7);
+    border:1px solid rgba(250,242,224,0.2);
+    color:var(--paper);font-size:13px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;padding:0;
+    transition:background .15s,border-color .15s;
+  }
+  .editor .images .thumb .controls .set-cover:hover{background:var(--terra);border-color:var(--terra)}
+  .editor .images .thumb .controls .del:hover{background:var(--err);border-color:var(--err)}
+
+  /* Upload tile — first item in the grid */
+  .editor .images .upload-tile{
+    aspect-ratio:1;
+    background:rgba(250,242,224,0.04);
+    border:2px dashed var(--paper-faint);
+    border-radius:6px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;cursor:pointer;
+    color:var(--paper-dim);
+    transition:border-color .15s,background .15s,color .15s;
+  }
+  .editor .images .upload-tile:hover, .editor .images .upload-tile.over{
+    border-color:var(--terra);background:rgba(184,64,27,0.08);color:var(--paper);
+  }
+  .editor .images .upload-tile .plus{font-size:32px;font-weight:300;line-height:1}
+  .editor .images .upload-tile .lbl{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;
+    text-transform:uppercase;letter-spacing:0.18em;text-align:center;
+  }
+  .editor .images .upload-tile.busy{cursor:wait;border-style:solid}
+  .editor .images .upload-tile.busy .plus{display:none}
 
   .toast{
     position:fixed;bottom:24px;right:24px;
@@ -502,11 +548,20 @@ function renderEditor() {
       <div><dt>category</dt><dd>${state.activeCategory}</dd></div>
     </dl>
 
-    <div class="images">
-      <h3>Photos (${images.length}) — editing coming in Phase 3C</h3>
+    <div class="images" id="image-grid">
+      <h3>Photos (${images.length}) — drag to reorder · hover for ⭐ cover / ✕ delete</h3>
+      <label class="upload-tile" id="upload-tile">
+        <span class="plus">+</span>
+        <span class="lbl" id="upload-lbl">Add photo</span>
+        <input type="file" id="file-upload" accept="image/*" hidden>
+      </label>
       ${images.map((fn, i) => `
-        <div class="thumb${i === coverIdx ? ' cover' : ''}" style="background-image:url('images/${folder}/${fn}')">
+        <div class="thumb${i === coverIdx ? ' cover' : ''}" draggable="true" data-idx="${i}" data-filename="${escAttr(fn)}" style="background-image:url('images/${folder}/${fn}')">
           ${i === coverIdx ? '<span class="badge">COVER</span>' : ''}
+          <div class="controls">
+            <button class="set-cover" title="Make cover">⭐</button>
+            <button class="del" title="Delete photo">✕</button>
+          </div>
           <span class="seq">${String(i+1).padStart(2,'0')}</span>
         </div>
       `).join('')}
@@ -522,10 +577,176 @@ function renderEditor() {
     input.value = decodeEntities(raw || '');
     input.addEventListener('input', onFieldChange);
   });
+
+  wireImageControls();
+
   // Savebar is persistent in DOM — reveal it now
   document.getElementById('savebar').classList.add('live');
   refreshPreview();
   refreshSavebar();
+}
+
+// ─── Image grid handlers ────────────────────────────────────────────────
+function wireImageControls() {
+  const grid = document.getElementById('image-grid');
+  if (!grid) return;
+
+  // Upload
+  document.getElementById('file-upload').addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (file) handleUpload(file);
+    e.target.value = ''; // reset so same file can be re-picked later
+  });
+
+  // Per-thumb controls (delegate)
+  grid.addEventListener('click', e => {
+    const thumb = e.target.closest('.thumb');
+    if (!thumb) return;
+    const idx = +thumb.dataset.idx;
+    if (e.target.classList.contains('set-cover')) {
+      state.draft.cover = idx + 1; // 1-based
+      renderEditor();
+      refreshSavebar();
+      toast('Cover updated — Save to publish');
+    } else if (e.target.classList.contains('del')) {
+      handleDelete(idx, thumb.dataset.filename);
+    }
+  });
+
+  // Drag-to-reorder
+  let dragFromIdx = null;
+  grid.addEventListener('dragstart', e => {
+    const thumb = e.target.closest('.thumb');
+    if (!thumb) return;
+    dragFromIdx = +thumb.dataset.idx;
+    thumb.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  grid.addEventListener('dragend', e => {
+    grid.querySelectorAll('.thumb').forEach(t => {
+      t.classList.remove('dragging','drop-before','drop-after');
+    });
+    dragFromIdx = null;
+  });
+  grid.addEventListener('dragover', e => {
+    const thumb = e.target.closest('.thumb');
+    if (!thumb || dragFromIdx === null) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const overIdx = +thumb.dataset.idx;
+    grid.querySelectorAll('.thumb').forEach(t => t.classList.remove('drop-before','drop-after'));
+    const rect = thumb.getBoundingClientRect();
+    const before = (e.clientX - rect.left) < rect.width / 2;
+    thumb.classList.add(before ? 'drop-before' : 'drop-after');
+  });
+  grid.addEventListener('drop', e => {
+    const thumb = e.target.closest('.thumb');
+    if (!thumb || dragFromIdx === null) return;
+    e.preventDefault();
+    const overIdx = +thumb.dataset.idx;
+    const rect = thumb.getBoundingClientRect();
+    const before = (e.clientX - rect.left) < rect.width / 2;
+    let toIdx = before ? overIdx : overIdx + 1;
+    if (toIdx > dragFromIdx) toIdx--; // account for removing source first
+    if (toIdx === dragFromIdx) return;
+    reorderImage(dragFromIdx, toIdx);
+  });
+}
+
+function reorderImage(from, to) {
+  const arr = state.draft.images;
+  const wasCover = (state.draft.cover - 1) === from;
+  const [moved] = arr.splice(from, 1);
+  arr.splice(to, 0, moved);
+  // Track cover by which filename it points to
+  if (wasCover) state.draft.cover = to + 1;
+  else {
+    const coverFn = state.original.images[(state.original.cover || 1) - 1];
+    const newCoverIdx = arr.indexOf(coverFn);
+    if (newCoverIdx >= 0) state.draft.cover = newCoverIdx + 1;
+  }
+  renderEditor();
+  refreshSavebar();
+}
+
+async function handleDelete(idx, filename) {
+  if (!confirm(`Delete photo "${filename}"?\n\nThis removes it from GitHub immediately. Git history keeps a copy.`)) return;
+  const folder = state.draft.id;
+  const path = `images/${folder}/${filename}`;
+  toast('Deleting ' + filename + '…');
+  try {
+    const r = await api('delete-file', { path, message: 'admin: delete ' + path });
+    if (!r.ok) throw new Error(r.error || 'Delete failed');
+    // Remove from draft.images
+    const wasCover = (state.draft.cover - 1) === idx;
+    state.draft.images.splice(idx, 1);
+    if (wasCover) state.draft.cover = 1;
+    else if (state.draft.cover - 1 > idx) state.draft.cover--;
+    state.draft.count = state.draft.images.length;
+    renderEditor();
+    refreshSavebar();
+    toast('Deleted — Save to publish the JSON change');
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+
+async function handleUpload(file) {
+  const folder = state.draft.id;
+  const tile = document.getElementById('upload-tile');
+  const lbl = document.getElementById('upload-lbl');
+  tile.classList.add('busy');
+  lbl.textContent = 'Reading…';
+
+  try {
+    const filename = await pickFilename(file.name, folder);
+    const b64 = await fileToBase64(file);
+
+    lbl.textContent = 'Uploading…';
+    const path = `images/${folder}/${filename}`;
+    const r = await api('upload-image', { path, contentBase64: b64, message: 'admin: upload ' + path });
+    if (!r.ok) throw new Error(r.error || 'Upload failed');
+
+    // Append to draft.images
+    state.draft.images.push(filename);
+    state.draft.count = state.draft.images.length;
+    renderEditor();
+    refreshSavebar();
+    toast('Uploaded ' + filename + ' — Save to publish the JSON change');
+  } catch (err) {
+    toast(err.message, true);
+  } finally {
+    tile.classList.remove('busy');
+    lbl.textContent = 'Add photo';
+  }
+}
+
+// Strip path, normalize spaces, suffix with -2/-3 if conflict in current draft
+async function pickFilename(originalName, folder) {
+  const base = originalName.split(/[\/\\]/).pop().replace(/\s+/g, '-');
+  const taken = new Set(state.draft.images);
+  if (!taken.has(base)) return base;
+  const dot = base.lastIndexOf('.');
+  const stem = dot > 0 ? base.slice(0, dot) : base;
+  const ext = dot > 0 ? base.slice(dot) : '';
+  for (let i = 2; i < 1000; i++) {
+    const candidate = `${stem}-${i}${ext}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+  throw new Error('Could not pick a unique filename');
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      // result is "data:image/jpeg;base64,...."; strip the prefix
+      const idx = reader.result.indexOf(',');
+      resolve(reader.result.slice(idx + 1));
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // Wire savebar buttons once at startup (delegated to global handlers)
