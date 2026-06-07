@@ -1,0 +1,18 @@
+{
+  "_doc": "Minimal schema for live-edit.js — this file is NOT consumed by Szabina's admin.html (which has its own internal schema). It only tells the live-edit overlay which collection maps to which JSON file. Add a collection here per page you want inline-editable.",
+  "site": {
+    "name": "Szabina"
+  },
+  "collections": [
+    {
+      "id": "szabina",
+      "label": "About page",
+      "file": "data/szabina.json",
+      "kind": "single"
+    }
+  ],
+  "media": {
+    "folder": "images",
+    "publicPrefix": "/images"
+  }
+}

@@ -1,12 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Szabina — a field journal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&amp;family=IBM+Plex+Mono:wght@300;400&amp;display=swap" rel="stylesheet">
 <script>
   // Apply admin-editable theme overrides. Defaults in :root still win on fetch failure.
   fetch('data/theme.json').then(r => r.ok ? r.json() : null).then(theme => {
@@ -576,19 +574,19 @@
   <!-- ───────── ABOUT ───────── -->
   <section class="about" id="about">
     <div class="about-text">
-      <span class="eyebrow small-caps">About</span>
+      <span class="eyebrow small-caps" data-cms-field="szabina.about.eyebrow">About</span>
       <h1>Earth is diverse, art is <em>diverse</em>. And so am I.</h1>
-      <p class="lede">I invite you to my visual diary, where I share the places, moments, and stories that inspire me, while tracing the emotions that leave their mark. This space is a collection of fragments &mdash; memories, moods, and self-reflections seen through my lens.</p>
-      <p>I&rsquo;m constantly evolving, and so is this collection. Each image is a small piece of that process. Thank you for being part of the journey.</p>
+      <p class="lede" data-cms-field="szabina.about.lede" data-cms-multiline="true">I invite you to my visual diary, where I share the places, moments, and stories that inspire me, while tracing the emotions that leave their mark. This space is a collection of fragments — memories, moods, and self-reflections seen through my lens.</p>
+      <p>I’m constantly evolving, and so is this collection. Each image is a small piece of that process. Thank you for being part of the journey.</p>
       <div class="sig">— Szabina<span class="amp">.</span></div>
     </div>
     <div class="about-portrait">
-      <img src="portrait.jpg" alt="Szabina" />
+      <img src="portrait.jpg" alt="Szabina">
     </div>
     <button class="scroll-hint" id="scroll-to-categories" aria-label="Scroll to categories">
       <span class="lbl">Scroll</span>
       <svg viewBox="0 0 14 20" fill="none" aria-hidden="true">
-        <path d="M7 0V18M7 18L1 12M7 18L13 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 0V18M7 18L1 12M7 18L13 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path>
       </svg>
     </button>
   </section>
@@ -681,6 +679,43 @@
   }, { threshold: [0.2] });
   revealEls.forEach(el => revealIO.observe(el));
 </script>
-</body>
-</html>
 
+
+
+
+<!-- noxta-admin: bootstrap -->
+<script>
+(async function bootstrap(){
+  function getAt(obj, path) {
+    let cur = obj;
+    for (const k of path) { if (cur == null) return undefined; cur = cur[k]; }
+    return cur;
+  }
+  function applyPage(data) {
+    if (!data || typeof data !== "object") return;
+    document.querySelectorAll("[data-cms-field]").forEach((el) => {
+      const raw = el.getAttribute("data-cms-field") || "";
+      const parts = raw.split(".");
+      if (parts.length < 2) return;
+      const path = parts.slice(1).map((p) => (/^\d+$/.test(p) ? Number(p) : p));
+      const v = getAt(data, path);
+      if (v == null) return;
+      if (el.tagName === "IMG" && typeof v === "string") { el.src = v; return; }
+      if (typeof v === "string" || typeof v === "number") el.textContent = String(v);
+    });
+  }
+  try {
+    const res = await fetch("/data/szabina.json" + "?v=" + Date.now(), { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === "object") {
+        window.__PAGE__ = data;
+        applyPage(data);
+      }
+    }
+  } catch (_) {}
+})();
+</script>
+<script src="/admin/theme-loader.js"></script>
+<script type="module" src="/admin/live-edit.js"></script>
+</body></html>
