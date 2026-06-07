@@ -488,8 +488,25 @@ const state = {
   password: sessionStorage.getItem('admin-pw') || null,
   travel: null,    // {data, sha}
   portrait: null,  // {data, sha}
-  activeCategory: null,  // 'travel' | 'portrait'
+  about: null,     // {data, sha}  — single object for Szabina.html
+  activeCategory: null,  // 'travel' | 'portrait' | 'theme' | 'about'
   activeIdx: null,
+};
+
+// Default About content used when data/szabina.json doesn't exist yet.
+const ABOUT_DEFAULTS = {
+  about: {
+    eyebrow: 'About',
+    title: 'Earth is diverse, art is *diverse*. And so am I.',
+    lede: 'I invite you to my visual diary, where I share the places, moments, and stories that inspire me, while tracing the emotions that leave their mark. This space is a collection of fragments — memories, moods, and self-reflections seen through my lens.',
+    second: 'I’m constantly evolving, and so is this collection. Each image is a small piece of that process. Thank you for being part of the journey.',
+    signature: '— Szabina.',
+  },
+  images: {
+    portrait: 'portrait.jpg',
+    travelCover: 'images/s01/1.webp',
+    portraitCover: 'category-portrait.jpg',
+  },
 };
 
 const loginEl = document.getElementById('login');
@@ -544,10 +561,11 @@ async function boot() {
   appEl.classList.add('live');
 
   toast('Loading stories…');
-  const [t, p, th] = await Promise.all([
+  const [t, p, th, ab] = await Promise.all([
     api('read', { path: 'data/travel.json' }),
     api('read', { path: 'data/portrait.json' }),
     api('read', { path: 'data/theme.json' }).catch(() => ({ ok: false })),
+    api('read', { path: 'data/szabina.json' }).catch(() => ({ ok: false })),
   ]);
   if (!t.ok || !p.ok) throw new Error(t.error || p.error || 'Read failed');
 
@@ -556,6 +574,9 @@ async function boot() {
   state.theme = th.ok
     ? { data: th.data, sha: th.sha }
     : { data: { bg:'#ffffff', paper:'#faf2e0', ink:'#1a0c05', 'ink-soft':'#3b251a', muted:'#8b7866', terra:'#b8401b', 'terra-deep':'#7a2a10' }, sha: null };
+  state.about = ab.ok
+    ? { data: ab.data, sha: ab.sha }
+    : { data: JSON.parse(JSON.stringify(ABOUT_DEFAULTS)), sha: null };
 
   renderSidebar();
   toast('Loaded ' + t.data.length + ' travel + ' + p.data.length + ' portrait stories');
@@ -583,6 +604,26 @@ function renderSidebar() {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectTheme(); }
   });
   sidebarEl.appendChild(themeBtn);
+
+  // About — single entry, sits between Site theme and Travel
+  const aboutHeader = document.createElement('h2');
+  aboutHeader.innerHTML = '<span>About page</span>';
+  sidebarEl.appendChild(aboutHeader);
+  const aboutBtn = document.createElement('div');
+  aboutBtn.className = 'story-item' + (state.activeCategory === 'about' ? ' active' : '');
+  aboutBtn.setAttribute('role', 'button');
+  aboutBtn.setAttribute('tabindex', '0');
+  aboutBtn.dataset.cat = 'about';
+  aboutBtn.dataset.idx = 0;
+  aboutBtn.innerHTML = `
+    <span class="title">About — Szabina.html</span>
+    <div class="sub">Text · 3 images</div>
+  `;
+  aboutBtn.addEventListener('click', selectAbout);
+  aboutBtn.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAbout(); }
+  });
+  sidebarEl.appendChild(aboutBtn);
 
   for (const [cat, label] of [['travel','Travel'], ['portrait','Portrait']]) {
     const h = document.createElement('h2');
@@ -1277,6 +1318,7 @@ function updateSidebarItem() {
 function discard() {
   state.draft = JSON.parse(JSON.stringify(state.original));
   if (state.activeCategory === 'theme') renderThemeEditor();
+  else if (state.activeCategory === 'about') renderAboutEditor();
   else renderEditor();
   refreshSavebar();
   toast('Discarded');
@@ -1311,6 +1353,173 @@ async function saveTheme(ss, saveBtn, discardBtn) {
   }
 }
 
+// ─── About page (single object: data/szabina.json) ──────────────────────
+function selectAbout() {
+  if (state.draft && isDirty()) {
+    if (!confirm('You have unsaved changes. Discard them?')) return;
+  }
+  state.activeCategory = 'about';
+  state.activeIdx = 0;
+  state.original = JSON.parse(JSON.stringify(state.about.data));
+  state.draft = JSON.parse(JSON.stringify(state.about.data));
+
+  document.querySelectorAll('.story-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === 'about');
+  });
+  renderAboutEditor();
+  document.getElementById('savebar').classList.add('live');
+  refreshSavebar();
+}
+
+function renderAboutEditor() {
+  editorEl.classList.remove('empty');
+  const d = state.draft;
+  d.about  = d.about  || {};
+  d.images = d.images || {};
+
+  editorEl.innerHTML = `
+    <h2 style="font-weight:300;font-size:36px;letter-spacing:-0.015em;margin-bottom:8px">About page</h2>
+    <p class="theme-intro">Edits the hero section on <code>Szabina.html</code>. Saves to <code>data/szabina.json</code>; the page reads it on every load.</p>
+
+    <form class="form" id="about-form" autocomplete="off">
+      <div class="field">
+        <label for="ab-eyebrow">Eyebrow</label>
+        <input id="ab-eyebrow" data-about-path="about.eyebrow">
+      </div>
+
+      <div class="field">
+        <label for="ab-title">Title <span class="hint">wrap a word in <code>*asterisks*</code> for italic, e.g. <code>art is *diverse*</code></span></label>
+        <input id="ab-title" class="big" data-about-path="about.title">
+      </div>
+
+      <div class="field">
+        <label for="ab-lede">Lede paragraph</label>
+        <textarea id="ab-lede" data-about-path="about.lede" rows="4"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="ab-second">Second paragraph</label>
+        <textarea id="ab-second" data-about-path="about.second" rows="3"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="ab-signature">Signature <span class="hint">trailing punctuation is auto-styled with the accent dot</span></label>
+        <input id="ab-signature" data-about-path="about.signature">
+      </div>
+    </form>
+
+    <div class="images" style="margin-top:32px">
+      <h3>Images — click a tile to upload a replacement</h3>
+      ${aboutImageTile('portrait',      'Portrait (right of hero)',    d.images.portrait)}
+      ${aboutImageTile('travelCover',   'Travel category cover',       d.images.travelCover)}
+      ${aboutImageTile('portraitCover', 'Portrait category cover',     d.images.portraitCover)}
+    </div>
+  `;
+
+  // Wire text inputs
+  editorEl.querySelectorAll('[data-about-path]').forEach(input => {
+    const path = input.dataset.aboutPath.split('.');
+    const cur = path.reduce((o, k) => (o ? o[k] : ''), state.draft);
+    input.value = decodeEntities(cur || '');
+    input.addEventListener('input', () => {
+      let cursor = state.draft;
+      for (let i = 0; i < path.length - 1; i++) {
+        cursor[path[i]] = cursor[path[i]] || {};
+        cursor = cursor[path[i]];
+      }
+      cursor[path[path.length - 1]] = input.value;
+      refreshSavebar();
+    });
+  });
+
+  // Wire image upload tiles
+  editorEl.querySelectorAll('[data-about-img]').forEach(tile => {
+    const field = tile.dataset.aboutImg;
+    const fileInput = tile.querySelector('input[type=file]');
+    tile.querySelector('.replace-btn').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => uploadAboutImage(e, field));
+  });
+
+  document.getElementById('savebar').classList.add('live');
+  refreshSavebar();
+}
+
+function aboutImageTile(field, label, currentPath) {
+  const src = currentPath ? '/' + currentPath.replace(/^\//, '') : '';
+  return `
+    <div class="thumb" data-about-img="${field}" style="background-image:url('${escAttr(src)}');cursor:default">
+      <span class="badge">${escAttr(label)}</span>
+      <div class="controls" style="opacity:1">
+        <button type="button" class="replace-btn" title="Upload replacement" style="width:auto;padding:0 10px;border-radius:13px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.05em">REPLACE</button>
+      </div>
+      <span class="seq">${escAttr(currentPath || '—')}</span>
+      <input type="file" accept="image/*" hidden>
+    </div>
+  `;
+}
+
+async function uploadAboutImage(e, field) {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+
+  // Use the current path so we overwrite in place; if missing, derive one.
+  const fallback = {
+    portrait:      'portrait.jpg',
+    travelCover:   'images/about/travel-cover',
+    portraitCover: 'images/about/portrait-cover',
+  };
+  const ext = (file.name.match(/\.([a-z0-9]+)$/i) || [, 'jpg'])[1].toLowerCase();
+  let path = (state.draft.images && state.draft.images[field]) || (fallback[field] + '.' + ext);
+  // If the existing path's extension doesn't match the new file, swap to match.
+  if (!path.toLowerCase().endsWith('.' + ext)) {
+    path = path.replace(/\.[a-z0-9]+$/i, '.' + ext);
+  }
+
+  try {
+    toast('Uploading ' + path + '…');
+    const b64 = await fileToBase64(file);
+    const r = await api('upload-image', { path, contentBase64: b64, message: 'admin: upload ' + path });
+    if (!r.ok) throw new Error(r.error || 'Upload failed');
+    state.draft.images = state.draft.images || {};
+    state.draft.images[field] = path;
+    renderAboutEditor();
+    refreshSavebar();
+    toast('Uploaded — Save to publish the JSON change');
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+
+async function saveAbout(ss, saveBtn, discardBtn) {
+  ss.className = 'status saving';
+  ss.textContent = 'Saving…';
+  saveBtn.disabled = true;
+  discardBtn.disabled = true;
+  try {
+    const r = await api('write-json', {
+      path: 'data/szabina.json',
+      content: state.draft,
+      sha: state.about.sha,
+      message: 'admin: update About page',
+    });
+    if (!r.ok) throw new Error(r.error || 'Save failed');
+    state.about.data = JSON.parse(JSON.stringify(state.draft));
+    state.about.sha = r.sha;
+    state.original = JSON.parse(JSON.stringify(state.draft));
+    ss.className = 'status saved';
+    ss.textContent = 'Saved · commit ' + (r.commit || '').slice(0, 7);
+    setTimeout(refreshSavebar, 2500);
+    toast('About page saved — refresh Szabina.html to see it');
+  } catch (err) {
+    ss.className = 'status err';
+    ss.textContent = 'Error: ' + err.message;
+    saveBtn.disabled = false;
+    discardBtn.disabled = false;
+    toast(err.message, true);
+  }
+}
+
 async function save() {
   const cat = state.activeCategory;
   const ss = document.getElementById('savestatus');
@@ -1319,6 +1528,7 @@ async function save() {
 
   // Theme save uses a different schema (single object, not array of stories)
   if (cat === 'theme') return saveTheme(ss, saveBtn, discardBtn);
+  if (cat === 'about') return saveAbout(ss, saveBtn, discardBtn);
 
   // Build new array with the draft replacing the active story, strip the
   // internal `_isNew` marker, and recompute `num` from array position so

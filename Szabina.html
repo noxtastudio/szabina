@@ -577,7 +577,7 @@
       <span class="eyebrow small-caps" data-cms-field="szabina.about.eyebrow">About</span>
       <h1>Earth is diverse, art is <em>diverse</em>. And so am I.</h1>
       <p class="lede" data-cms-field="szabina.about.lede" data-cms-multiline="true">I invite you to my visual diary, where I share the places, moments, and stories that inspire me, while tracing the emotions that leave their mark. This space is a collection of fragments — memories, moods, and self-reflections seen through my lens.</p>
-      <p>I’m constantly evolving, and so is this collection. Each image is a small piece of that process. Thank you for being part of the journey.</p>
+      <p data-cms-field="szabina.about.second" data-cms-multiline="true">I’m constantly evolving, and so is this collection. Each image is a small piece of that process. Thank you for being part of the journey.</p>
       <div class="sig">— Szabina<span class="amp">.</span></div>
     </div>
     <div class="about-portrait">
@@ -691,6 +691,10 @@
     for (const k of path) { if (cur == null) return undefined; cur = cur[k]; }
     return cur;
   }
+  function escHtml(s) {
+    return String(s).replace(/[&<>]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  }
+  // Generic marker pass — textContent for plain-text fields, src for <img>.
   function applyPage(data) {
     if (!data || typeof data !== "object") return;
     document.querySelectorAll("[data-cms-field]").forEach((el) => {
@@ -704,6 +708,38 @@
       if (typeof v === "string" || typeof v === "number") el.textContent = String(v);
     });
   }
+  // Szabina-specific pass — handles styled fields and background images.
+  // Title uses *word* → <em>word</em>. Signature wraps trailing punctuation
+  // in <span class="amp"> (matches the .sig design).
+  function applyStyled(data) {
+    if (!data) return;
+    const about = data.about || {};
+    const imgs  = data.images || {};
+
+    const h1 = document.querySelector("section.about h1");
+    if (h1 && about.title) {
+      h1.innerHTML = escHtml(about.title).replace(/\*([^*]+)\*/g, "<em>$1</em>");
+    }
+    const sig = document.querySelector("section.about .sig");
+    if (sig && about.signature) {
+      const m = String(about.signature).match(/^(.*?)([.!?…])\s*$/);
+      sig.innerHTML = m
+        ? escHtml(m[1]) + '<span class="amp">' + escHtml(m[2]) + '</span>'
+        : escHtml(about.signature);
+    }
+    const portraitImg = document.querySelector("section.about .about-portrait img");
+    if (portraitImg && imgs.portrait) portraitImg.src = imgs.portrait;
+
+    const cards = document.querySelectorAll("section.categories .category-card");
+    if (cards[0] && imgs.travelCover) {
+      const ph = cards[0].querySelector(".category-photo");
+      if (ph) ph.style.backgroundImage = "url('" + imgs.travelCover + "')";
+    }
+    if (cards[1] && imgs.portraitCover) {
+      const ph = cards[1].querySelector(".category-photo");
+      if (ph) ph.style.backgroundImage = "url('" + imgs.portraitCover + "')";
+    }
+  }
   try {
     const res = await fetch("/data/szabina.json" + "?v=" + Date.now(), { cache: "no-store" });
     if (res.ok) {
@@ -711,6 +747,7 @@
       if (data && typeof data === "object") {
         window.__PAGE__ = data;
         applyPage(data);
+        applyStyled(data);
       }
     }
   } catch (_) {}
