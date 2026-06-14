@@ -380,8 +380,8 @@
     "id": "s21",
     "num": "XV",
     "coverExt": "jpg",
-    "cover": 1,
-    "count": 6,
+    "cover": 7,
+    "count": 7,
     "date": "06 · II · 26",
     "place": "Ouddorp · Netherlands",
     "title": [
@@ -396,7 +396,11 @@
       "IMG_7853.jpg",
       "IMG_7838.jpg",
       "IMG_7767.jpg",
-      "IMG_7965.jpg"
+      "IMG_7965.jpg",
+      "IMG_7946-2.jpg"
+    ],
+    "hiddenInGallery": [
+      "IMG_7946-2.jpg"
     ]
   }
 ]
