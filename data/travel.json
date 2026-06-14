@@ -175,8 +175,8 @@
   {
     "id": "s08",
     "num": "VIII",
-    "cover": 1,
-    "count": 3,
+    "cover": 2,
+    "count": 4,
     "date": "30 · VII · 25",
     "place": "Horseshoe Bend · 04:30",
     "title": [
@@ -187,8 +187,12 @@
     "shortPlace": "Sleep?",
     "images": [
       "1.webp",
-      "IMG_3836.jpg",
-      "IMG_3816.jpg"
+      "IMG_3831-5.jpg",
+      "IMG_3816.jpg",
+      "IMG_3836.jpg"
+    ],
+    "hiddenInGallery": [
+      "IMG_3831-5.jpg"
     ]
   },
   {
