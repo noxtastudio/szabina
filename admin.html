@@ -818,6 +818,11 @@ function refreshDemo() {
   demo.style.setProperty('--pv-terra-deep', t['terra-deep']);
 }
 
+// Session-only previews for just-uploaded photos. The file is committed to
+// GitHub instantly, but the Cloudflare deploy lags ~1-2 min, so the remote
+// URL 404s (black tile) until then. Show the local bytes in the meantime.
+const localPreviews = new Map(); // "folder/filename" -> object URL
+
 function renderEditor() {
   const s = state.draft;
   editorEl.classList.remove('empty');
@@ -885,8 +890,9 @@ function renderEditor() {
       </label>
       ${images.map((fn, i) => {
         const isHidden = (s.hiddenInGallery || []).includes(fn);
+        const src = localPreviews.get(`${folder}/${fn}`) || `images/${folder}/${fn}`;
         return `
-        <div class="thumb${i === coverIdx ? ' cover' : ''}${isHidden ? ' hidden-in-gallery' : ''}" draggable="true" data-idx="${i}" data-filename="${escAttr(fn)}" style="background-image:url('images/${folder}/${fn}')">
+        <div class="thumb${i === coverIdx ? ' cover' : ''}${isHidden ? ' hidden-in-gallery' : ''}" draggable="true" data-idx="${i}" data-filename="${escAttr(fn)}" style="background-image:url('${src}')">
           ${i === coverIdx ? '<span class="badge">COVER</span>' : ''}
           <div class="controls">
             <button class="set-cover" title="Make cover">⭐</button>
@@ -1211,6 +1217,9 @@ async function handleUploads(files) {
         const r = await api('upload-image', { path, contentBase64: b64, message: 'admin: upload ' + path });
         if (!r.ok) throw new Error(r.error || 'Upload failed');
 
+        // Remote asset isn't deployed yet — preview from the local file so the
+        // tile shows the photo immediately instead of a black square.
+        localPreviews.set(`${folder}/${filename}`, URL.createObjectURL(file));
         state.draft.images.push(filename);
         state.draft.count = state.draft.images.length;
         okCount++;
