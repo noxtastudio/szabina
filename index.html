@@ -230,7 +230,7 @@
   .slider .track{
     display:flex;height:100%;
     gap:20px;
-    padding:24px 48px;
+    padding:24px 50%;
     overflow-x:auto;overflow-y:hidden;
     scroll-behavior:smooth;
     scroll-snap-type:x mandatory;
@@ -240,12 +240,25 @@
   .slider .slide{flex:0 0 auto;height:100%;display:flex;align-items:center;justify-content:center;scroll-snap-align:center}
   .slider .slide .frame{position:relative;height:100%;display:flex;align-items:center;justify-content:center}
   .slider .slide .frame::after{content:"@szabina.bks";position:absolute;right:14px;bottom:12px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:0.12em;color:rgba(250,242,224,0.55);text-shadow:0 1px 4px rgba(0,0,0,0.55);pointer-events:none}
-  .slider .slide img{height:100%;width:auto;max-width:none;object-fit:contain;box-shadow:var(--shadow)}
+  .slider .slide img{height:100%;width:auto;max-width:none;object-fit:contain;box-shadow:var(--shadow);cursor:zoom-in}
 
   .slider .edge{position:absolute;top:0;bottom:0;width:80px;pointer-events:none;transition:opacity .3s;z-index:2}
   .slider .edge-left{left:0;background:linear-gradient(90deg,#0a0500 0%,rgba(10,5,0,0) 100%)}
   .slider .edge-right{right:0;background:linear-gradient(270deg,#0a0500 0%,rgba(10,5,0,0) 100%)}
   .slider .edge.hidden{opacity:0}
+
+  /* full-size quick-view lightbox */
+  .lightbox{position:fixed;inset:0;z-index:1000;background:rgba(8,4,0,0.95);display:none;align-items:center;justify-content:center}
+  .lightbox.open{display:flex}
+  .lightbox img{max-width:94vw;max-height:90vh;width:auto;height:auto;object-fit:contain;box-shadow:0 24px 70px rgba(0,0,0,0.6)}
+  .lightbox button{position:absolute;border:1px solid rgba(250,242,224,0.3);color:var(--paper);background:rgba(10,5,0,0.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s}
+  .lightbox button:hover{background:var(--paper);color:var(--ink)}
+  .lightbox .lb-close{top:20px;right:24px;width:46px;height:46px;font-size:20px}
+  .lightbox .lb-prev,.lightbox .lb-next{top:50%;transform:translateY(-50%);width:54px;height:54px;font-family:"Cormorant Garamond",serif;font-style:italic;font-size:26px}
+  .lightbox .lb-prev{left:24px}.lightbox .lb-next{right:24px}
+  .lightbox .lb-count{position:absolute;bottom:22px;left:0;right:0;text-align:center;color:rgba(250,242,224,0.75);font-family:"Cormorant Garamond",serif;font-style:italic;font-size:20px}
+  .lightbox .lb-mark{position:absolute;bottom:24px;right:24px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;color:rgba(250,242,224,0.5)}
+  @media(max-width:700px){.lightbox .lb-prev{left:10px}.lightbox .lb-next{right:10px}.lightbox .lb-mark{display:none}}
 
   .arrow-btn{
     width:40px;height:40px;border-radius:50%;
@@ -290,7 +303,7 @@
     .gallery .head{display:flex;justify-content:space-between;align-items:center;gap:14px}
     .gallery .head .center{display:none}
     .gallery .head .right{flex:0 0 auto}
-    .slider .track{padding:16px 24px;gap:14px}
+    .slider .track{padding:16px 50%;gap:14px}
     .arrow-btn{width:36px;height:36px;font-size:18px}
     .slider .edge{display:none}
     .progress{left:20px;bottom:18px}
@@ -772,6 +785,44 @@
   let curSlide = 0;
   let totalSlides = 0;
 
+  // ── Full-size quick-view lightbox ──
+  const openLightbox = (() => {
+    let urls = [], i = 0;
+    const lb = document.createElement('div');
+    lb.className = 'lightbox';
+    lb.innerHTML = '<button class="lb-close" aria-label="Close">✕</button>'
+      + '<button class="lb-prev" aria-label="Previous">←</button>'
+      + '<img alt="">'
+      + '<button class="lb-next" aria-label="Next">→</button>'
+      + '<div class="lb-count"></div><div class="lb-mark">@szabina.bks</div>';
+    document.body.appendChild(lb);
+    const lbImg = lb.querySelector('img');
+    const lbCount = lb.querySelector('.lb-count');
+    function render() {
+      const url = urls[i];
+      let tries = 0;
+      lbImg.onerror = () => { if (tries++ >= 5) { lbImg.onerror = null; return; } setTimeout(() => { lbImg.src = url + '?retry=' + tries; }, 1500 * tries); };
+      lbImg.src = url;
+      lbCount.textContent = (i + 1) + ' / ' + urls.length;
+      const vis = urls.length > 1 ? 'visible' : 'hidden';
+      lb.querySelector('.lb-prev').style.visibility = vis;
+      lb.querySelector('.lb-next').style.visibility = vis;
+    }
+    function move(d) { i = (i + d + urls.length) % urls.length; render(); }
+    function close() { lb.classList.remove('open'); document.body.style.overflow = ''; }
+    lb.querySelector('.lb-close').addEventListener('click', close);
+    lb.querySelector('.lb-prev').addEventListener('click', e => { e.stopPropagation(); move(-1); });
+    lb.querySelector('.lb-next').addEventListener('click', e => { e.stopPropagation(); move(1); });
+    lb.addEventListener('click', e => { if (e.target === lb) close(); });
+    document.addEventListener('keydown', e => {
+      if (!lb.classList.contains('open')) return;
+      if (e.key === 'Escape') { close(); e.stopImmediatePropagation(); }
+      else if (e.key === 'ArrowLeft') { move(-1); e.stopImmediatePropagation(); }
+      else if (e.key === 'ArrowRight') { move(1); e.stopImmediatePropagation(); }
+    });
+    return (list, start) => { urls = list; i = start || 0; render(); lb.classList.add('open'); document.body.style.overflow = 'hidden'; };
+  })();
+
   function openGallery() {
     const s = order[storyIdx];
     gNum.textContent = s.num;
@@ -782,17 +833,21 @@
 
     track.innerHTML = '';
     gDots.innerHTML = '';
+    const urls = [];
     for (let n = 1; n <= s.count; n++) {
       const slide = document.createElement('div');
       slide.className = 'slide';
       const file = (s.images && s.images[n - 1]) || `${n}.${n === 1 ? 'webp' : 'jpg'}`;
       const url = `images/${s.id}/${file}`;
+      urls.push(url);
       slide.innerHTML = `<div class="frame"><img alt="${s.shortPlace} ${n}"></div>`;
       const img = slide.querySelector('img');
       // Retry transient GitHub Pages 503s on freshly-uploaded photos.
       let tries = 0;
       img.onerror = () => { if (tries++ >= 5) { img.onerror = null; return; } setTimeout(() => { img.src = url + '?retry=' + tries; }, 1500 * tries); };
       img.src = url;
+      const at = n - 1;
+      slide.addEventListener('click', () => openLightbox(urls, at));
       track.appendChild(slide);
       const dot = document.createElement('button');
       dot.className = 'dot' + (n === 1 ? ' active' : '');
@@ -804,8 +859,10 @@
 
     totalSlides = s.count;
     curSlide = 0;
-    track.scrollLeft = 0;
     setSlideState(0);
+    // center the first photo (track has 50% inline padding so it can center)
+    const first = track.querySelector('.slide');
+    if (first) first.scrollIntoView({ block: 'nearest', inline: 'center' });
     updateEdges();
 
     document.body.classList.add('gallery-open');
