@@ -3,7 +3,7 @@
     "id": "s01",
     "num": "I",
     "cover": 1,
-    "count": 9,
+    "count": 10,
     "date": "19 · VII · 25",
     "place": "Monument Valley · Utah · Arizona",
     "title": [
@@ -13,6 +13,7 @@
     "caption": "A sandstone spire holds the last of the day. The road that brought me here was named, in the end, by a man who simply would not stop running &mdash; and I understood him better than I expected to.",
     "shortPlace": "Monument Valley",
     "images": [
+      "IMG_4166-3.jpg",
       "1.webp",
       "atnevezve.jpg",
       "3.jpg",
@@ -22,6 +23,9 @@
       "5.jpg",
       "7.jpg",
       "IMG_4095-3.jpg"
+    ],
+    "hiddenInGallery": [
+      "IMG_4166-3.jpg"
     ]
   },
   {
