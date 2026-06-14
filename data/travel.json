@@ -412,29 +412,8 @@
     ]
   },
   {
-    "id": "s19",
-    "num": "XVIII",
-    "coverExt": "jpg",
-    "cover": 1,
-    "count": 4,
-    "date": "13 · I · 26",
-    "place": "Grand Canyon · Arizona",
-    "title": [
-      "Edge of",
-      "<em>everything</em>."
-    ],
-    "caption": "One small figure on a long ledge. The canyon does what it always does &mdash; it stays, and it makes the rest of us look briefly honest.",
-    "shortPlace": "GC · memory",
-    "images": [
-      "1.jpg",
-      "2.jpg",
-      "3.jpg",
-      "4.jpg"
-    ]
-  },
-  {
     "id": "s21",
-    "num": "XIX",
+    "num": "XVIII",
     "coverExt": "jpg",
     "cover": 1,
     "count": 8,
@@ -459,7 +438,7 @@
   },
   {
     "id": "s24",
-    "num": "XX",
+    "num": "XIX",
     "coverExt": "jpg",
     "cover": 1,
     "count": 12,
