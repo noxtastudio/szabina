@@ -674,8 +674,16 @@
     activeStory = sec;
     // hydrate slide images
     sec.querySelectorAll('.slide img[data-src]').forEach(img => {
-      img.src = img.dataset.src;
+      const url = img.dataset.src;
       img.removeAttribute('data-src');
+      // Retry transient load failures — GitHub Pages can 503 a freshly
+      // uploaded photo for a minute or two while its CDN settles.
+      let tries = 0;
+      img.onerror = () => {
+        if (tries++ >= 5) { img.onerror = null; return; }
+        setTimeout(() => { img.src = url + '?retry=' + tries; }, 1500 * tries);
+      };
+      img.src = url;
     });
     // brief delay so the open transition starts, then scroll into the gallery
     setTimeout(() => {
