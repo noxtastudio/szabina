@@ -14,11 +14,11 @@
     "shortPlace": "Monument Valley",
     "images": [
       "1.webp",
-      "2.jpg",
       "3.jpg",
+      "6.jpg",
+      "2.jpg",
       "4.jpg",
       "5.jpg",
-      "6.jpg",
       "7.jpg"
     ]
   },
@@ -527,5 +527,21 @@
       "11.jpg",
       "12.jpg"
     ]
+  },
+  {
+    "id": "s25",
+    "num": "XXIII",
+    "coverExt": "jpg",
+    "cover": 1,
+    "count": 0,
+    "date": "14 · VI · 26",
+    "place": "New place · location",
+    "title": [
+      "New story",
+      "<em>title</em>."
+    ],
+    "caption": "Caption goes here. Edit me before saving.",
+    "shortPlace": "New",
+    "images": []
   }
 ]
