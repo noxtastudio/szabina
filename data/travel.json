@@ -316,8 +316,8 @@
     "id": "s14",
     "num": "XIV",
     "coverExt": "jpg",
-    "cover": 1,
-    "count": 6,
+    "cover": 2,
+    "count": 7,
     "date": "10 · VIII · 25",
     "place": "Daly City · California",
     "title": [
@@ -328,11 +328,15 @@
     "shortPlace": "Daly City",
     "images": [
       "1.jpg",
+      "IMG_4913.jpg",
       "IMG_4998.jpg",
       "IMG_5002.jpg",
       "IMG_4949.jpg",
       "IMG_4935-2.jpg",
       "IMG_4934-2.jpg"
+    ],
+    "hiddenInGallery": [
+      "IMG_4913.jpg"
     ]
   },
   {
