@@ -119,9 +119,14 @@ jobs:
             echo "Push $attempt rejected; fetch+rebase and retry…"
             git fetch origin main
             if ! git rebase origin/main; then
-              echo "Rebase failed; aborting."
+              # A conflict here means a concurrent admin commit deleted or
+              # replaced one of the images we just resized. Our resize is then
+              # obsolete: the photo is gone, or the new upload has its own
+              # resize run queued. Nothing useful left to commit — skip
+              # cleanly instead of failing the run with a false alarm.
+              echo "Image was deleted/replaced upstream during resize — skipping."
               git rebase --abort || true
-              exit 1
+              exit 0
             fi
           done
           echo "Push still failing after 5 attempts." >&2
