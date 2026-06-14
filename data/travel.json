@@ -412,29 +412,8 @@
     ]
   },
   {
-    "id": "s18",
-    "num": "XVIII",
-    "coverExt": "jpg",
-    "cover": 1,
-    "count": 4,
-    "date": "13 · I · 26",
-    "place": "Monument Valley · revisited",
-    "title": [
-      "Last",
-      "<em>May</em>."
-    ],
-    "caption": "The sandstone keeps a record of light that doesn&rsquo;t need a calendar to read it back. A return trip in the head, half a year later.",
-    "shortPlace": "MV · memory",
-    "images": [
-      "1.jpg",
-      "2.jpg",
-      "3.jpg",
-      "4.jpg"
-    ]
-  },
-  {
     "id": "s19",
-    "num": "XIX",
+    "num": "XVIII",
     "coverExt": "jpg",
     "cover": 1,
     "count": 4,
@@ -455,7 +434,7 @@
   },
   {
     "id": "s20",
-    "num": "XX",
+    "num": "XIX",
     "coverExt": "jpg",
     "cover": 1,
     "count": 3,
@@ -475,7 +454,7 @@
   },
   {
     "id": "s21",
-    "num": "XXI",
+    "num": "XX",
     "coverExt": "jpg",
     "cover": 1,
     "count": 8,
@@ -500,7 +479,7 @@
   },
   {
     "id": "s24",
-    "num": "XXII",
+    "num": "XXI",
     "coverExt": "jpg",
     "cover": 1,
     "count": 12,
@@ -529,7 +508,7 @@
   },
   {
     "id": "s25",
-    "num": "XXIII",
+    "num": "XXII",
     "coverExt": "jpg",
     "cover": 1,
     "count": 0,
