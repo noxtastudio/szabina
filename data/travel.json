@@ -3,7 +3,7 @@
     "id": "s01",
     "num": "I",
     "cover": 1,
-    "count": 10,
+    "count": 9,
     "date": "19 · VII · 25",
     "place": "Monument Valley · Utah · Arizona",
     "title": [
@@ -21,8 +21,7 @@
       "2.jpg",
       "4.jpg",
       "5.jpg",
-      "7.jpg",
-      "IMG_4095-3.jpg"
+      "7.jpg"
     ],
     "hiddenInGallery": [
       "IMG_4166-3.jpg"
