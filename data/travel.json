@@ -58,7 +58,7 @@
   {
     "id": "s03",
     "num": "III",
-    "cover": 1,
+    "cover": 9,
     "count": 9,
     "date": "21 · VII · 25",
     "place": "Vermilion Cliffs · Arizona",
@@ -69,7 +69,6 @@
     "caption": "I&rsquo;m going to hide somewhere in Arizona. There are folds in the red rock big enough to lose a life inside of, and most days that sounds like an offer worth considering.",
     "shortPlace": "Arizona",
     "images": [
-      "1.webp",
       "IMG_3678.jpg",
       "IMG_3655.jpg",
       "2.jpg",
@@ -77,11 +76,10 @@
       "3.jpg",
       "7.jpg",
       "IMG_3636-2.jpg",
-      "5.jpg"
+      "5.jpg",
+      "IMG_3678-3.jpg"
     ],
-    "hiddenInGallery": [
-      "1.webp"
-    ]
+    "hiddenInGallery": []
   },
   {
     "id": "s04",
