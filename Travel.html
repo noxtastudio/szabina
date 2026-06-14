@@ -487,7 +487,7 @@
 <body>
 
   <header class="mast">
-    <div class="wordmark">Szabina</div>
+    <a href="index.html" class="wordmark">Szabina</a>
     <button class="menu-toggle" aria-label="Menu" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
@@ -623,9 +623,7 @@
   }
 
   // Wordmark scrolls to top of page
-  document.querySelector('.mast .wordmark').addEventListener('click', () => {
-    window.scrollTo({top: 0, behavior: 'smooth'});
-  });
+  // wordmark is a link to the homepage (index.html)
 
   // Mobile menu toggle
   (function setupMobileMenu(){

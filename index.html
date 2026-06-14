@@ -355,7 +355,7 @@
 <body>
 
 <header class="mast">
-  <div class="wordmark">Szabina</div>
+  <a href="index.html" class="wordmark">Szabina</a>
   <button class="menu-toggle" aria-label="Menu" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
@@ -679,9 +679,7 @@
   }
 
   document.getElementById('scroll-hint').addEventListener('click', () => goToStory(storyIdx + 1, 'next'));
-  document.querySelector('.mast .wordmark').addEventListener('click', () => {
-    if (storyIdx !== 0) goToStory(0, 'prev');
-  });
+  // wordmark is a link to the homepage (index.html)
 
   // Mobile menu toggle
   (function setupMobileMenu(){
