@@ -361,31 +361,8 @@
     ]
   },
   {
-    "id": "s16",
-    "num": "XVI",
-    "coverExt": "jpg",
-    "cover": 1,
-    "count": 6,
-    "date": "26 · XII · 25",
-    "place": "The Woods · Netherlands",
-    "title": [
-      "Beauty of",
-      "<em>the woods</em>."
-    ],
-    "caption": "A polaroid pinned to a forest. The trees pretended not to notice, and the photograph stayed anyway.",
-    "shortPlace": "The Woods",
-    "images": [
-      "1.jpg",
-      "2.jpg",
-      "3.jpg",
-      "4.jpg",
-      "5.jpg",
-      "6.jpg"
-    ]
-  },
-  {
     "id": "s21",
-    "num": "XVII",
+    "num": "XVI",
     "coverExt": "jpg",
     "cover": 1,
     "count": 8,
@@ -410,7 +387,7 @@
   },
   {
     "id": "s24",
-    "num": "XVIII",
+    "num": "XVII",
     "coverExt": "jpg",
     "cover": 1,
     "count": 12,
