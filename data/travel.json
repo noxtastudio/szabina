@@ -343,8 +343,8 @@
     "id": "s15",
     "num": "XV",
     "coverExt": "jpg",
-    "cover": 1,
-    "count": 11,
+    "cover": 2,
+    "count": 12,
     "date": "16 · VIII · 25",
     "place": "San Francisco · California",
     "title": [
@@ -355,6 +355,7 @@
     "shortPlace": "San Francisco",
     "images": [
       "1.jpg",
+      "IMG_5121-3.jpg",
       "IMG_5033.jpg",
       "11.jpg",
       "IMG_5077.jpg",
@@ -365,6 +366,9 @@
       "IMG_5213.jpg",
       "IMG_5097-2-2.jpg",
       "IMG_5081.jpg"
+    ],
+    "hiddenInGallery": [
+      "IMG_5121-3.jpg"
     ]
   },
   {
