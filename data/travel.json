@@ -191,7 +191,7 @@
     "id": "s09",
     "num": "IX",
     "cover": 1,
-    "count": 3,
+    "count": 4,
     "date": "01 · VIII · 25",
     "place": "Sequoia, again · California",
     "title": [
@@ -202,8 +202,12 @@
     "shortPlace": "Golden hour",
     "images": [
       "1.webp",
-      "2.jpg",
-      "IMG_4690.jpg"
+      "IMG_4731-4.jpg",
+      "IMG_4690.jpg",
+      "IMG_4731-3.jpg"
+    ],
+    "hiddenInGallery": [
+      "1.webp"
     ]
   },
   {
