@@ -693,6 +693,26 @@
   })();
 
   // initial render — VII pinned first
+  // Pull real photo lists from the editable galleries so the homepage viewer
+  // uses actual filenames (not positional 1.webp / 2.jpg…) and correct counts.
+  Promise.all([
+    fetch('data/travel.json').then(r => r.ok ? r.json() : []).catch(() => []),
+    fetch('data/portrait.json').then(r => r.ok ? r.json() : []).catch(() => []),
+  ]).then(([t, p]) => {
+    const byId = {};
+    [...(Array.isArray(t) ? t : []), ...(Array.isArray(p) ? p : [])].forEach(o => {
+      if (o && o.id && Array.isArray(o.images)) byId[o.id] = o;
+    });
+    STORIES.forEach(s => {
+      const j = byId[s.id];
+      if (!j) return;
+      const hidden = new Set(j.hiddenInGallery || []);
+      s.images = j.images.filter(fn => !hidden.has(fn));
+      s.count = s.images.length;
+    });
+    if (order[storyIdx]) openLabel.textContent = `View story · ${order[storyIdx].count} pictures`;
+  });
+
   renderCover(order[0], true);
 
   // ─── Wheel navigation (one story per gesture, vertical) ─────────────
@@ -765,7 +785,14 @@
     for (let n = 1; n <= s.count; n++) {
       const slide = document.createElement('div');
       slide.className = 'slide';
-      slide.innerHTML = `<div class="frame"><img src="images/${s.id}/${n}.${n === 1 ? 'webp' : 'jpg'}" alt="${s.shortPlace} ${n}"></div>`;
+      const file = (s.images && s.images[n - 1]) || `${n}.${n === 1 ? 'webp' : 'jpg'}`;
+      const url = `images/${s.id}/${file}`;
+      slide.innerHTML = `<div class="frame"><img alt="${s.shortPlace} ${n}"></div>`;
+      const img = slide.querySelector('img');
+      // Retry transient GitHub Pages 503s on freshly-uploaded photos.
+      let tries = 0;
+      img.onerror = () => { if (tries++ >= 5) { img.onerror = null; return; } setTimeout(() => { img.src = url + '?retry=' + tries; }, 1500 * tries); };
+      img.src = url;
       track.appendChild(slide);
       const dot = document.createElement('button');
       dot.className = 'dot' + (n === 1 ? ' active' : '');
