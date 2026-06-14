@@ -29,7 +29,7 @@
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{height:100%;background:#0a0500;color:var(--paper);font-family:"Cormorant Garamond",Georgia,serif;font-weight:400;-webkit-font-smoothing:antialiased;overflow:hidden}
-  img{display:block;max-width:100%}
+  img{display:block;max-width:100%;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
   a{color:inherit;text-decoration:none}
   button{background:none;border:0;cursor:pointer;color:inherit;font-family:inherit}
   .small-caps{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:0.28em;font-size:11px;font-weight:400}
@@ -238,7 +238,8 @@
   }
   .slider .track::-webkit-scrollbar{display:none}
   .slider .slide{flex:0 0 auto;height:100%;display:flex;align-items:center;justify-content:center;scroll-snap-align:center}
-  .slider .slide .frame{height:100%;display:flex;align-items:center;justify-content:center}
+  .slider .slide .frame{position:relative;height:100%;display:flex;align-items:center;justify-content:center}
+  .slider .slide .frame::after{content:"@szabina.bks";position:absolute;right:14px;bottom:12px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:0.12em;color:rgba(250,242,224,0.55);text-shadow:0 1px 4px rgba(0,0,0,0.55);pointer-events:none}
   .slider .slide img{height:100%;width:auto;max-width:none;object-fit:contain;box-shadow:var(--shadow)}
 
   .slider .edge{position:absolute;top:0;bottom:0;width:80px;pointer-events:none;transition:opacity .3s;z-index:2}
@@ -849,6 +850,15 @@
       else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') goToStory(storyIdx - 1, 'prev');
       else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGallery(); }
     }
+  });
+</script>
+<script>
+  // Light deterrents against casual image saving (not foolproof — screenshots still work).
+  document.addEventListener('contextmenu', e => {
+    if (e.target.closest('img, .cover .photo, .slider .frame')) e.preventDefault();
+  });
+  document.addEventListener('dragstart', e => {
+    if (e.target.tagName === 'IMG') e.preventDefault();
   });
 </script>
 </body>

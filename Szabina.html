@@ -29,7 +29,7 @@
   html{scroll-behavior:smooth}
   html,body{background:var(--bg);color:var(--ink);font-family:"Cormorant Garamond", Georgia, serif;font-weight:400;-webkit-font-smoothing:antialiased}
   body{overflow-x:hidden}
-  img{display:block;max-width:100%}
+  img{display:block;max-width:100%;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
   a{color:inherit;text-decoration:none}
   button{background:none;border:0;cursor:pointer;color:inherit;font-family:inherit}
   .mono{font-family:"IBM Plex Mono", ui-monospace, monospace;font-weight:400}
@@ -754,4 +754,13 @@
 </script>
 <script src="/admin/theme-loader.js"></script>
 <script type="module" src="/admin/live-edit.js"></script>
+<script>
+  // Light deterrents against casual image saving (not foolproof — screenshots still work).
+  document.addEventListener('contextmenu', e => {
+    if (e.target.closest('img, .cover .photo, .slider .frame')) e.preventDefault();
+  });
+  document.addEventListener('dragstart', e => {
+    if (e.target.tagName === 'IMG') e.preventDefault();
+  });
+</script>
 </body></html>
