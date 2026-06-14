@@ -433,28 +433,8 @@
     ]
   },
   {
-    "id": "s20",
-    "num": "XIX",
-    "coverExt": "jpg",
-    "cover": 1,
-    "count": 3,
-    "date": "18 · I · 26",
-    "place": "Sequoia National Park · California",
-    "title": [
-      "Walking back",
-      "<em>through it</em>."
-    ],
-    "caption": "Two people, one trail, two-thousand-year-old neighbors. The path remembers more than we ever will.",
-    "shortPlace": "Sequoia · memory",
-    "images": [
-      "1.jpg",
-      "2.jpg",
-      "3.jpg"
-    ]
-  },
-  {
     "id": "s21",
-    "num": "XX",
+    "num": "XIX",
     "coverExt": "jpg",
     "cover": 1,
     "count": 8,
@@ -479,7 +459,7 @@
   },
   {
     "id": "s24",
-    "num": "XXI",
+    "num": "XX",
     "coverExt": "jpg",
     "cover": 1,
     "count": 12,
