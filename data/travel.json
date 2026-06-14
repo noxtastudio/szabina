@@ -164,8 +164,8 @@
   {
     "id": "s07",
     "num": "VII",
-    "cover": 1,
-    "count": 8,
+    "cover": 9,
+    "count": 9,
     "date": "27 · VII · 25",
     "place": "Sequoia National Park · California",
     "title": [
@@ -182,7 +182,11 @@
       "4.jpg",
       "6.jpg",
       "IMG_4561.jpg",
-      "IMG_4575-4.jpg"
+      "IMG_4575-4.jpg",
+      "IMG_4595-2-2.jpg"
+    ],
+    "hiddenInGallery": [
+      "IMG_4595-2-2.jpg"
     ]
   },
   {
