@@ -1214,7 +1214,13 @@ async function handleUploads(files) {
 
         lbl.textContent = `${prefix}Uploading…`;
         const path = `images/${folder}/${filename}`;
-        const r = await api('upload-image', { path, contentBase64: b64, message: 'admin: upload ' + path });
+        let r = await api('upload-image', { path, contentBase64: b64, message: 'admin: upload ' + path });
+        if (!r.ok && /exists/i.test(r.error || '')) {
+          // The file is already in the repo but not in this album — an earlier
+          // upload whose JSON change was never saved (drift). No need to
+          // re-upload; just link the existing file into the album.
+          r = { ok: true };
+        }
         if (!r.ok) throw new Error(r.error || 'Upload failed');
 
         // Remote asset isn't deployed yet — preview from the local file so the
