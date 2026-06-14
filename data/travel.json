@@ -3,7 +3,7 @@
     "id": "s01",
     "num": "I",
     "cover": 1,
-    "count": 7,
+    "count": 10,
     "date": "19 · VII · 25",
     "place": "Monument Valley · Utah · Arizona",
     "title": [
@@ -14,12 +14,15 @@
     "shortPlace": "Monument Valley",
     "images": [
       "1.webp",
+      "atnevezve.jpg",
+      "IMG_3934.jpg",
       "3.jpg",
       "6.jpg",
       "2.jpg",
       "4.jpg",
       "5.jpg",
-      "7.jpg"
+      "7.jpg",
+      "IMG_4095-3.jpg"
     ]
   },
   {
