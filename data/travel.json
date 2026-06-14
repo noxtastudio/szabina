@@ -83,7 +83,7 @@
     "id": "s04",
     "num": "IV",
     "cover": 1,
-    "count": 7,
+    "count": 8,
     "date": "22 · VII · 25",
     "place": "Grand Canyon · South Kaibab Trail",
     "title": [
@@ -93,6 +93,7 @@
     "caption": "No photograph survives this place. You stand at the rim and the scale rearranges your idea of what a hole in the earth can be.",
     "shortPlace": "Grand Canyon",
     "images": [
+      "IMG_3562-3.jpg",
       "1.webp",
       "2.jpg",
       "3.jpg",
@@ -100,6 +101,9 @@
       "4.jpg",
       "5.jpg",
       "7.jpg"
+    ],
+    "hiddenInGallery": [
+      "IMG_3562-3.jpg"
     ]
   },
   {
