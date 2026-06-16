@@ -4,944 +4,689 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Szabina — a field journal</title>
+<meta name="description" content="Szabina — a visual diary. Travel and self-portrait, mostly in black and white.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
-<script>
-  // Apply admin-editable theme overrides. Defaults in :root still win on fetch failure.
-  fetch('data/theme.json').then(r => r.ok ? r.json() : null).then(theme => {
-    if (!theme) return;
-    for (const [k, v] of Object.entries(theme)) {
-      document.documentElement.style.setProperty('--' + k, v);
-    }
-  }).catch(() => {});
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
+  /* ─────────────────────────────────────────────────────────────
+     SZABINA — homepage (Home + About merged)
+     Monochrome editorial. White ground, black serif, B&W imagery.
+     Terracotta lives only as a hairline accent (--accent).
+     Motion: GSAP + ScrollTrigger + CSS 3D. Progressive enhancement —
+     all content is visible without JS; GSAP only animates it in.
+     ───────────────────────────────────────────────────────────── */
   :root{
-    --bg:#f3e8d2;
-    --paper:#faf2e0;
-    --ink:#1a0c05;
-    --ink-soft:#3b251a;
-    --muted:#8b7866;
-    --terra:#b8401b;
-    --terra-deep:#7a2a10;
-    --shadow:0 30px 60px -20px rgba(26,12,5,0.55);
+    --paper:#ffffff;          /* white ground — her request */
+    --bone:#f3f1ec;           /* faint warm-grey panel */
+    --ink:#0e0c0b;            /* near-black */
+    --ink-soft:#46413d;       /* secondary text */
+    --muted:#9a938b;          /* mono labels / tertiary */
+    --line:rgba(14,12,11,0.13);
+    --accent:#b8401b;         /* terracotta — used as a whisper only */
+    --shadow:0 50px 90px -40px rgba(14,12,11,0.5);
+    --ease:cubic-bezier(.5,0,.18,1);
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  html,body{height:100%;background:#0a0500;color:var(--paper);font-family:"Cormorant Garamond",Georgia,serif;font-weight:400;-webkit-font-smoothing:antialiased;overflow:hidden}
+  html{scroll-behavior:smooth}
+  html,body{
+    background:var(--paper);color:var(--ink);
+    font-family:"Cormorant Garamond",Georgia,serif;font-weight:400;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  body{overflow-x:hidden}
   img{display:block;max-width:100%;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
   a{color:inherit;text-decoration:none}
   button{background:none;border:0;cursor:pointer;color:inherit;font-family:inherit}
-  .small-caps{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:0.28em;font-size:11px;font-weight:400}
+  ::selection{background:var(--ink);color:var(--paper)}
+
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:400}
+  .small-caps{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.3em;font-size:11px;font-weight:400}
+  .accent{color:var(--accent)}
+
+  /* film grain — faint analog texture over the whole page */
+  .grain{
+    position:fixed;inset:-50%;z-index:1;pointer-events:none;opacity:.04;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    mix-blend-mode:multiply;
+  }
 
   /* ───────── Masthead ───────── */
   .mast{
     position:fixed;top:0;left:0;right:0;z-index:100;
     display:flex;justify-content:space-between;align-items:center;
-    padding:18px 24px;color:var(--paper);
-    pointer-events:none;
+    padding:24px 40px;color:var(--ink);pointer-events:none;
+    background:rgba(247,245,241,0.82);
+    backdrop-filter:blur(10px) saturate(1.05);-webkit-backdrop-filter:blur(10px) saturate(1.05);
+    border-bottom:1px solid rgba(14,12,11,0.06);
+    transition:color .5s ease, background .5s ease, border-color .5s ease;
   }
-  .mast .wordmark,
-  .mast .right{
-    background:rgba(10,5,0,0.45);
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-    border:1px solid rgba(250,242,224,0.12);
-    border-radius:22px;
-    padding:9px 18px;
-    pointer-events:auto;
+  /* over the dark hero photo: float clean — no backdrop, light text */
+  .mast.over{
+    color:var(--paper);
+    background:transparent;
+    backdrop-filter:none;-webkit-backdrop-filter:none;
+    border-color:transparent;
   }
-  .mast .wordmark{font-size:14px;letter-spacing:0.32em;text-transform:uppercase;font-weight:500;font-family:"Cormorant Garamond",serif;cursor:pointer;transition:opacity .2s}
-  .mast .wordmark:hover{opacity:.6}
-  .mast .right{display:flex;gap:22px;align-items:center}
-  /* Hamburger toggle (hidden on desktop) */
-  .mast .menu-toggle{
-    display:none;
-    width:38px;height:38px;
-    background:rgba(10,5,0,0.45);
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-    border:1px solid rgba(250,242,224,0.12);
-    border-radius:50%;color:var(--paper);cursor:pointer;
-    align-items:center;justify-content:center;
-    pointer-events:auto;position:relative;
-  }
-  .mast .menu-toggle span{
-    position:absolute;left:11px;
-    display:block;width:16px;height:1px;background:currentColor;
-    transition:transform .25s ease, opacity .2s ease, top .25s ease;
-  }
-  .mast .menu-toggle span:nth-child(1){top:13px}
-  .mast .menu-toggle span:nth-child(2){top:18px}
-  .mast .menu-toggle span:nth-child(3){top:23px}
-  .mast.menu-open .menu-toggle span:nth-child(1){top:18px;transform:rotate(45deg)}
-  .mast.menu-open .menu-toggle span:nth-child(2){opacity:0}
-  .mast.menu-open .menu-toggle span:nth-child(3){top:18px;transform:rotate(-45deg)}
-  .mast a{transition:opacity .2s}
-  .mast a:hover{opacity:.6}
-
-  /* ───────── Hero (fullscreen cover) ───────── */
-  .hero{position:fixed;inset:0;overflow:hidden;background:#0a0500}
-
-  .cover{position:absolute;inset:0;cursor:pointer;overflow:hidden}
-
-  .cover .photo{
-    position:absolute;inset:0;
-    background-size:cover;background-position:center;
-    opacity:0;
-    transform:translateY(0);
-    will-change:transform, opacity;
-  }
-  /* Active layer: visible, at rest */
-  .cover .photo.on{opacity:1}
-  .cover .veil{
-    position:absolute;inset:0;
-    background:linear-gradient(180deg, rgba(10,5,0,0.4) 0%, rgba(10,5,0,0.05) 22%, rgba(10,5,0,0) 48%, rgba(10,5,0,0.88) 100%);
-    pointer-events:none;
-  }
-  .cover .veil-left{
-    position:absolute;inset:0;
-    background:linear-gradient(90deg, rgba(10,5,0,0.6) 0%, rgba(10,5,0,0.18) 40%, rgba(10,5,0,0) 62%);
-    pointer-events:none;
-  }
-  .cover .text{
-    position:absolute;left:0;right:0;bottom:0;
-    padding:48px 60px 84px;color:var(--paper);
-    display:grid;grid-template-columns:1fr auto;gap:48px;align-items:end;
-    pointer-events:none;
-  }
-  .cover .meta{display:flex;flex-direction:column;gap:18px;max-width:62ch}
-  .cover .meta .row{display:flex;gap:18px;align-items:center;color:rgba(250,242,224,0.78);flex-wrap:wrap}
-  .cover .meta .row .num{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:30px;color:var(--paper);line-height:1}
-  .cover .meta .row .dot{width:5px;height:5px;background:var(--terra);border-radius:50%;display:inline-block;flex:0 0 5px}
-  .cover .meta h2{
-    font-weight:300;font-size:clamp(40px,6vw,96px);line-height:0.98;letter-spacing:-0.018em;color:var(--paper);
-    text-shadow:0 2px 28px rgba(0,0,0,0.7), 0 0 14px rgba(0,0,0,0.5);max-width:18ch;
-  }
-  .cover .meta h2 em{font-style:italic;font-weight:300;color:#ffb88c}
-  .cover .meta p{font-size:clamp(17px,1.3vw,21px);line-height:1.5;color:rgba(250,242,224,0.92);font-style:italic;max-width:46ch;text-shadow:0 1px 14px rgba(0,0,0,0.7), 0 0 10px rgba(0,0,0,0.5)}
-  .cover .meta .row{text-shadow:0 1px 10px rgba(0,0,0,0.6)}
-  .cover .cta{display:flex;flex-direction:column;align-items:flex-end;gap:14px;color:var(--paper);text-align:right;pointer-events:auto}
-  .cover .cta .open{
-    display:flex;align-items:center;gap:14px;padding:14px 22px;
-    border:1px solid rgba(250,242,224,0.5);border-radius:999px;
-    background:rgba(10,5,0,0.18);backdrop-filter:blur(4px);
-    transition:all .2s;
-  }
-  .cover .cta .open:hover{background:rgba(250,242,224,0.95);color:var(--ink);border-color:var(--paper)}
-  .cover .cta .open .arrow{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:24px;line-height:1}
-  .cover .cta .open span:first-child{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.22em;font-size:11px}
-
-  /* ── Cover transition: line-mask reveal + slide ── */
-  .cover .meta h2,
-  .cover .meta p{
-    overflow:hidden;
-  }
-  .cover .meta .l-mask{display:block;overflow:hidden;padding-bottom:.22em}
-  .cover .meta .l-inner{
-    display:block;
-    transform:translateY(0);
-    transition: transform 1s cubic-bezier(.5,0,.18,1);
-    transition-delay: calc(var(--i, 0) * .075s);
-    will-change: transform;
-  }
-  .cover .meta .row,
-  .cover .cta{
-    transition: transform .8s cubic-bezier(.5,0,.18,1), opacity .55s ease;
-    will-change: transform, opacity;
-  }
-  .cover .meta .row{transition-delay:0s}
-  .cover .cta     {transition-delay:.05s}
-
-  /* OUT — text wipes out the way you're scrolling */
-  .cover.t-out-next .meta .l-inner{transform:translateY(-110%)}
-  .cover.t-out-prev .meta .l-inner{transform:translateY(110%)}
-  .cover.t-out-next .meta .row,
-  .cover.t-out-next .cta{transform:translateY(-50px);opacity:0}
-  .cover.t-out-prev .meta .row,
-  .cover.t-out-prev .cta{transform:translateY(50px);opacity:0}
-
-  /* PREP — snap to the opposite side instantly (no transition), so removing the class triggers the slide-in */
-  .cover.t-in-prep-next .meta .l-inner{transform:translateY(110%);transition:none}
-  .cover.t-in-prep-prev .meta .l-inner{transform:translateY(-110%);transition:none}
-  .cover.t-in-prep-next .meta .row,
-  .cover.t-in-prep-next .cta{transform:translateY(50px);opacity:0;transition:none}
-  .cover.t-in-prep-prev .meta .row,
-  .cover.t-in-prep-prev .cta{transform:translateY(-50px);opacity:0;transition:none}
-
-  /* ───────── Scroll hint (bottom-center) ───────── */
-  .scroll-hint{
-    position:fixed;left:50%;bottom:22px;
-    transform:translateX(-50%);z-index:50;
-    display:flex;flex-direction:column;align-items:center;gap:8px;
-    padding:6px 10px;background:transparent;border:0;cursor:pointer;
-    color:var(--paper);opacity:.75;
-    transition:opacity .25s ease;
-    text-shadow:0 1px 6px rgba(0,0,0,0.55);
-  }
-  .scroll-hint:hover{opacity:1}
-  .scroll-hint .lbl{
+  .mast .wordmark{
     font-family:"IBM Plex Mono",monospace;text-transform:uppercase;
-    letter-spacing:.28em;font-size:10px;
+    letter-spacing:.42em;font-size:13px;font-weight:400;
+    pointer-events:auto;transition:opacity .25s;
   }
-  .scroll-hint svg{
-    width:14px;height:20px;
-    animation: scroll-bounce 2.2s ease-in-out infinite;
-    filter:drop-shadow(0 1px 4px rgba(0,0,0,0.5));
+  .mast .wordmark:hover{opacity:.55}
+  .mast .right{display:flex;gap:30px;align-items:center;pointer-events:auto}
+  .mast .right a{position:relative;font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.24em;font-size:11px;padding:4px 0;transition:opacity .25s}
+  .mast .right a::after{content:"";position:absolute;left:0;right:100%;bottom:0;height:1px;background:currentColor;transition:right .35s var(--ease)}
+  .mast .right a:hover::after{right:0}
+  .mast .menu-toggle{
+    display:none;width:40px;height:40px;border-radius:50%;
+    border:1px solid currentColor;color:inherit;cursor:pointer;
+    position:relative;pointer-events:auto;
   }
-  @keyframes scroll-bounce{
-    0%, 100%{transform: translateY(0); opacity:.9}
-    50%     {transform: translateY(6px); opacity:.55}
-  }
-  body.gallery-open .scroll-hint,
-  body.gallery-open .mast{opacity:0;pointer-events:none;transition:opacity .3s}
+  .mast .menu-toggle span{position:absolute;left:11px;width:16px;height:1px;background:currentColor;transition:.25s ease}
+  .mast .menu-toggle span:nth-child(1){top:15px}
+  .mast .menu-toggle span:nth-child(2){top:24px}
+  .mast.menu-open .menu-toggle span:nth-child(1){top:19px;transform:rotate(45deg)}
+  .mast.menu-open .menu-toggle span:nth-child(2){top:19px;transform:rotate(-45deg)}
 
-  /* ───────── Gallery overlay ───────── */
-  .gallery{
-    position:fixed;inset:0;z-index:120;
-    background:#0a0500;color:var(--paper);
-    display:grid;grid-template-rows:auto 1fr auto;
-    opacity:0;pointer-events:none;
-    transition:opacity .35s ease;
+  /* ───────── 1 · HERO ───────── */
+  .hero{position:relative;height:100svh;min-height:620px;overflow:hidden;background:#0a0807}
+  .hero__media{
+    position:absolute;inset:-8% 0;
+    background:#0a0807 center/cover no-repeat;
+    filter:grayscale(1) contrast(1.04) brightness(.92);
+    will-change:transform;
   }
-  body.gallery-open .gallery{opacity:1;pointer-events:auto}
-  /* Belt-and-suspenders: any child of the hidden mast must also stop catching clicks */
-  body.gallery-open .mast .wordmark,
-  body.gallery-open .mast .right,
-  body.gallery-open .mast a{ pointer-events:none }
-
-  .gallery .head{
-    display:grid;grid-template-columns:auto 1fr auto;gap:36px;align-items:center;
-    padding:28px 48px 20px;
-    border-bottom:1px solid rgba(250,242,224,0.12);
+  /* WebGL water-ripple canvas (cursor effect) — desktop + WebGL only; else the CSS bg above shows */
+  .hero__gl{display:none;position:absolute;inset:0;width:100%;height:100%;z-index:0;will-change:transform}
+  .has-webgl .hero__gl{display:block}
+  .has-webgl .hero__media{display:none}
+  .hero__veil{
+    position:absolute;inset:0;pointer-events:none;
+    background:
+      linear-gradient(180deg,rgba(8,6,5,.34) 0%,rgba(8,6,5,0) 26%,rgba(8,6,5,0) 50%,rgba(8,6,5,.72) 100%),
+      linear-gradient(90deg,rgba(8,6,5,.40) 0%,rgba(8,6,5,0) 46%);
   }
-  .gallery .head .left{display:flex;gap:20px;align-items:baseline}
-  .gallery .head .left .n{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:32px;color:var(--terra);line-height:1}
-  .gallery .head .left .title{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:22px;letter-spacing:-0.005em}
-  .gallery .head .center{text-align:center;color:rgba(250,242,224,0.6)}
-  .gallery .head .right{display:flex;gap:16px;align-items:center}
-  .gallery .head .close{
-    width:42px;height:42px;border:1px solid rgba(250,242,224,0.3);border-radius:50%;
-    display:flex;align-items:center;justify-content:center;color:var(--paper);
-    font-size:18px;transition:all .18s;
+  .hero__foot{
+    position:absolute;left:0;right:0;bottom:0;z-index:3;
+    padding:0 40px 46px;color:var(--paper);will-change:transform;
   }
-  .gallery .head .close:hover{background:var(--paper);color:var(--ink);border-color:var(--paper)}
-
-  /* slider — horizontal scroller */
-  .slider{position:relative;overflow:hidden;min-height:0}
-  .slider .track{
-    display:flex;height:100%;
-    gap:20px;
-    padding:24px 50%;
-    overflow-x:auto;overflow-y:hidden;
-    scroll-behavior:smooth;
-    scroll-snap-type:x mandatory;
-    scrollbar-width:none;-ms-overflow-style:none;
+  .hero__kicker{display:block;color:rgba(255,255,255,.72);margin-bottom:18px}
+  .hero__name{
+    font-weight:300;line-height:.86;letter-spacing:-.02em;
+    font-size:clamp(78px,17vw,300px);
+    display:flex;
   }
-  .slider .track::-webkit-scrollbar{display:none}
-  .slider .slide{flex:0 0 auto;height:100%;display:flex;align-items:center;justify-content:center;scroll-snap-align:center}
-  .slider .slide .frame{position:relative;height:100%;display:flex;align-items:center;justify-content:center}
-  .slider .slide .frame::after{content:"@szabina.bks";position:absolute;right:14px;bottom:12px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:0.12em;color:rgba(250,242,224,0.55);text-shadow:0 1px 4px rgba(0,0,0,0.55);pointer-events:none}
-  .slider .slide img{height:100%;width:auto;max-width:none;object-fit:contain;box-shadow:var(--shadow);cursor:zoom-in}
-
-  .slider .edge{position:absolute;top:0;bottom:0;width:80px;pointer-events:none;transition:opacity .3s;z-index:2}
-  .slider .edge-left{left:0;background:linear-gradient(90deg,#0a0500 0%,rgba(10,5,0,0) 100%)}
-  .slider .edge-right{right:0;background:linear-gradient(270deg,#0a0500 0%,rgba(10,5,0,0) 100%)}
-  .slider .edge.hidden{opacity:0}
-
-  /* full-size quick-view lightbox */
-  .lightbox{position:fixed;inset:0;z-index:1000;background:rgba(8,4,0,0.95);display:none;align-items:center;justify-content:center}
-  .lightbox.open{display:flex}
-  .lightbox img{max-width:94vw;max-height:90vh;width:auto;height:auto;object-fit:contain;box-shadow:0 24px 70px rgba(0,0,0,0.6)}
-  .lightbox button{position:absolute;border:1px solid rgba(250,242,224,0.3);color:var(--paper);background:rgba(10,5,0,0.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s}
-  .lightbox button:hover{background:var(--paper);color:var(--ink)}
-  .lightbox .lb-close{top:20px;right:24px;width:46px;height:46px;font-size:20px}
-  .lightbox .lb-prev,.lightbox .lb-next{top:50%;transform:translateY(-50%);width:54px;height:54px;font-family:"Cormorant Garamond",serif;font-style:italic;font-size:26px}
-  .lightbox .lb-prev{left:24px}.lightbox .lb-next{right:24px}
-  .lightbox .lb-count{position:absolute;bottom:22px;left:0;right:0;text-align:center;color:rgba(250,242,224,0.75);font-family:"Cormorant Garamond",serif;font-style:italic;font-size:20px}
-  .lightbox .lb-mark{position:absolute;bottom:24px;right:24px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;color:rgba(250,242,224,0.5)}
-  @media(max-width:700px){.lightbox .lb-prev{left:10px}.lightbox .lb-next{right:10px}.lightbox .lb-mark{display:none}}
-
-  .arrow-btn{
-    width:40px;height:40px;border-radius:50%;
-    background:rgba(250,242,224,0.06);border:1px solid rgba(250,242,224,0.22);
-    color:var(--paper);font-family:"Cormorant Garamond",serif;font-style:italic;font-size:22px;
-    display:flex;align-items:center;justify-content:center;transition:all .2s;
+  .hero__name .ch{display:inline-block;overflow:hidden;padding:0 .008em}
+  .hero__name .ch > span{display:inline-block;will-change:transform}
+  .hero__sub{
+    display:flex;align-items:center;gap:16px;margin-top:14px;
+    font-style:italic;font-size:clamp(19px,2vw,28px);color:rgba(255,255,255,.9);
   }
-  .arrow-btn:hover{background:var(--paper);color:var(--ink);border-color:var(--paper)}
-  .arrow-btn:disabled{opacity:.25;cursor:not-allowed}
-  .arrow-btn:disabled:hover{background:rgba(250,242,224,0.06);color:var(--paper);border-color:rgba(250,242,224,0.22)}
-
-  .gallery .foot{
-    padding:18px 48px 28px;
-    display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px;
-    border-top:1px solid rgba(250,242,224,0.12);
-    color:rgba(250,242,224,0.65);
+  .hero__sub .ln{width:54px;height:1px;background:var(--accent);display:inline-block}
+  .hero__cue{
+    position:absolute;right:40px;bottom:46px;z-index:3;color:var(--paper);
+    display:flex;flex-direction:column;align-items:center;gap:10px;opacity:.8;
   }
-  .gallery .foot .counter{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:32px;color:var(--paper);text-align:center;line-height:1}
-  .gallery .foot .counter .of{color:rgba(250,242,224,0.4);margin:0 6px}
-  .gallery .foot .left-group{display:flex;gap:20px;align-items:center;justify-self:start}
-  .gallery .foot .nav-arrows{display:flex;gap:8px}
-  .gallery .foot .dots{display:flex;gap:8px;align-items:center}
-  .gallery .foot .dot{width:24px;height:2px;background:rgba(250,242,224,0.18);transition:all .25s;cursor:pointer}
-  .gallery .foot .dot.active{background:var(--terra);width:48px}
-  .gallery .foot .place{justify-self:end;font-style:italic;font-size:16px;font-family:"Cormorant Garamond",serif}
+  .hero__cue .lbl{font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.3em;font-size:10px;writing-mode:vertical-rl}
+  .hero__cue .bar{width:1px;height:54px;background:linear-gradient(var(--paper),rgba(255,255,255,0));overflow:hidden;position:relative}
+  .hero__cue .bar::after{content:"";position:absolute;inset:0;background:var(--paper);animation:cue 2.4s var(--ease) infinite}
+  @keyframes cue{0%{transform:translateY(-100%)}60%,100%{transform:translateY(100%)}}
 
-  /* progress chip — shows which story # in the random order */
-  .progress{
-    position:fixed;left:36px;bottom:32px;z-index:55;
-    color:var(--paper);mix-blend-mode:difference;
-    font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.28em;font-size:11px;
-    display:flex;align-items:center;gap:12px;
-    transition:opacity .3s;
+  /* ───────── 2 · ABOUT (full-screen statement) ───────── */
+  .about{
+    position:relative;z-index:2;overflow:hidden;
+    min-height:100vh;background:var(--paper);
+    display:flex;flex-direction:column;
+    padding:13vh 40px 9vh;
   }
-  .progress .line{width:42px;height:1px;background:currentColor;opacity:.5}
-  body.gallery-open .progress{opacity:0;pointer-events:none}
-
-  @media (max-width: 900px){
-    .cover .text{grid-template-columns:1fr;padding:32px 24px 40px}
-    .cover .cta{align-items:flex-start;text-align:left}
-    .gallery .head,.gallery .foot{padding-left:24px;padding-right:24px}
-    .gallery .head{display:flex;justify-content:space-between;align-items:center;gap:14px}
-    .gallery .head .center{display:none}
-    .gallery .head .right{flex:0 0 auto}
-    .slider .track{padding:16px 50%;gap:14px}
-    .arrow-btn{width:36px;height:36px;font-size:18px}
-    .slider .edge{display:none}
-    .progress{left:20px;bottom:18px}
-    /* Gallery head — close ✕ always pinned right */
-    .gallery .head .left{flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:14px}
-    .gallery .head .left .title{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-    .gallery .head .left .n{font-size:24px;flex:0 0 auto}
-    /* Gallery foot — arrows/dots on left, counter on right */
-    .gallery .foot{display:flex;justify-content:space-between;align-items:center;gap:14px}
+  .about__grid{
+    flex:1;display:grid;grid-template-rows:auto 1fr auto;
+    gap:clamp(20px,3vh,36px);
   }
+  .about__topline{display:flex;justify-content:space-between;align-items:baseline;gap:24px}
+  .about__eyebrow{color:var(--accent)}
+  .about__index{color:var(--muted)}
+  .about__head{
+    align-self:center;justify-self:start;
+    font-weight:300;font-size:clamp(46px,8vw,150px);line-height:.95;
+    letter-spacing:-.028em;color:var(--ink);
+  }
+  .about__head em{font-style:italic;color:var(--ink)}
+  .about__head em.tone{color:var(--accent)}
+  .about__body{align-self:end;justify-self:end;max-width:46ch;margin-right:clamp(0px,6vw,96px)}
+  .about .lede{font-style:italic;font-size:clamp(18px,1.45vw,23px);line-height:1.5;color:var(--ink-soft);margin-bottom:20px}
+  .about p.body{font-size:clamp(16px,1.1vw,18px);line-height:1.6;color:var(--ink-soft);margin-bottom:18px}
+  .about .sig{font-style:italic;font-size:clamp(32px,2.8vw,44px);line-height:1;margin-top:26px;font-weight:300}
+  .about .sig .amp{color:var(--accent)}
 
-  /* ─── small phones ─── */
-  @media (max-width: 600px){
-    /* Tighter mast pill for the wordmark */
-    .mast{padding:12px 12px}
-    .mast .wordmark{padding:7px 12px;border-radius:18px;font-size:11px;letter-spacing:.22em}
-    /* Show the hamburger, hide the inline nav until menu-open */
-    .mast .menu-toggle{display:flex}
+  /* line-mask reveal primitive */
+  .reveal-lines .line{display:block;overflow:hidden}
+  .reveal-lines .line > span{display:block;will-change:transform}
+
+  /* ───────── 3 · PORTRAITS IN MOTION ───────── */
+  .portraits{position:relative;z-index:2;background:var(--paper);padding:clamp(40px,8vh,110px) 40px clamp(80px,14vh,200px)}
+  .portraits__head{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    gap:30px;margin-bottom:clamp(40px,7vw,96px);padding-bottom:28px;border-bottom:1px solid var(--line);
+  }
+  .portraits__head h3{font-weight:300;font-size:clamp(34px,4.6vw,76px);line-height:1;letter-spacing:-.02em}
+  .portraits__head h3 em{font-style:italic;color:var(--accent)}
+  .portraits__head .note{max-width:30ch;color:var(--ink-soft);font-style:italic;font-size:clamp(15px,1.1vw,18px);line-height:1.5;text-align:right}
+
+  .plates{position:relative;perspective:1600px}
+  .plate-grid{
+    display:grid;grid-template-columns:repeat(12,1fr);
+    gap:clamp(20px,3vw,48px);align-items:start;
+  }
+  figure.plate{position:relative;margin:0;will-change:transform;transform-style:preserve-3d}
+  /* asymmetric editorial scatter (desktop) */
+  .plate.p1{grid-column:1 / span 5}
+  .plate.p2{grid-column:8 / span 5;margin-top:14vh}
+  .plate.p3{grid-column:2 / span 4;margin-top:6vh}
+  .plate.p4{grid-column:7 / span 6;margin-top:2vh}
+  .plate.p5{grid-column:3 / span 5;margin-top:4vh}
+
+  .plate__img{position:relative;overflow:hidden;box-shadow:var(--shadow);background:var(--bone)}
+  .plate.tall .plate__img{aspect-ratio:4/5}
+  .plate.wide .plate__img{aspect-ratio:5/4}
+  .plate__img img{
+    width:100%;height:100%;object-fit:cover;
+    filter:grayscale(1) contrast(1.04);transform:scale(1.04);
+    transition:filter .9s var(--ease),transform 1.4s var(--ease);
+  }
+  .plate:hover .plate__img img{filter:grayscale(0) contrast(1);transform:scale(1.0)}
+  .plate__cap{display:flex;align-items:baseline;gap:14px;margin-top:16px}
+  .plate__cap .n{font-style:italic;font-size:22px;color:var(--accent);line-height:1}
+  .plate__cap .ttl{font-size:clamp(17px,1.4vw,22px);font-weight:400}
+  .plate__cap .ttl em{font-style:italic}
+  .plate__cap .pl{margin-left:auto;color:var(--muted)}
+
+  /* ───────── 5 · DOORWAYS (Travel / Portrait) ───────── */
+  .doors{position:relative;z-index:2;background:var(--paper);padding:clamp(80px,12vh,160px) 40px}
+  .doors__lead{display:flex;justify-content:space-between;align-items:baseline;gap:24px;margin-bottom:clamp(36px,5vw,64px)}
+  .doors__lead .small-caps{color:var(--muted)}
+  .doors__lead h3{font-weight:300;font-size:clamp(30px,4vw,60px);line-height:1;letter-spacing:-.02em}
+  .doors__lead h3 em{font-style:italic;color:var(--accent)}
+  .door-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3vw,40px)}
+  .door{position:relative;aspect-ratio:4/5;overflow:hidden;color:var(--paper);display:block;perspective:1000px}
+  .door__photo{
+    position:absolute;inset:0;background-size:cover;background-position:center;
+    filter:grayscale(1) contrast(1.05) brightness(.92);transform:scale(1.04);
+    transition:filter 1s var(--ease),transform 1.6s var(--ease);
+  }
+  .door:hover .door__photo{filter:grayscale(0) contrast(1) brightness(.96);transform:scale(1.09)}
+  .door__veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,6,5,.15) 0%,rgba(8,6,5,0) 34%,rgba(8,6,5,0) 50%,rgba(8,6,5,.82) 100%);pointer-events:none}
+  .door__text{position:absolute;left:0;right:0;bottom:0;padding:clamp(28px,3vw,48px);display:flex;flex-direction:column;gap:14px}
+  .door__title{font-weight:300;font-size:clamp(48px,7vw,128px);line-height:.92;letter-spacing:-.02em;text-shadow:0 2px 30px rgba(0,0,0,.5)}
+  .door__meta{display:flex;align-items:center;gap:14px;color:rgba(255,255,255,.82)}
+  .door__meta .arrow{font-style:italic;font-size:22px;transition:transform .4s var(--ease)}
+  .door:hover .door__meta .arrow{transform:translateX(10px)}
+
+  /* ───────── 6 · CLOSING ───────── */
+  .closing{position:relative;z-index:2;background:var(--paper);padding:clamp(70px,11vh,140px) 40px clamp(46px,6vh,80px);display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(40px,7vw,100px);align-items:end}
+  .closing__end{font-weight:300;font-size:clamp(54px,9vw,150px);line-height:.92;letter-spacing:-.022em}
+  .closing__end em{font-style:italic;color:var(--accent)}
+  .closing__right{display:flex;flex-direction:column;gap:24px;color:var(--ink-soft);font-size:clamp(17px,1.2vw,20px);line-height:1.55;max-width:40ch}
+  .closing__ig{display:inline-flex;align-items:center;gap:12px;align-self:flex-start;color:var(--ink);font-style:italic;font-size:clamp(22px,2vw,30px);border-bottom:1px solid var(--accent);padding-bottom:6px;transition:.3s}
+  .closing__ig:hover{color:var(--accent);gap:18px}
+  .copy{position:relative;z-index:2;background:var(--paper);padding:26px 40px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;color:var(--muted);gap:16px;flex-wrap:wrap}
+  .copy a{transition:color .25s}
+  .copy a:hover{color:var(--ink)}
+
+  /* ───────── Side rail (section index) ───────── */
+  .rail{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:60;display:flex;flex-direction:column;gap:2px;mix-blend-mode:difference;color:#fff}
+  .rail button{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:7px 0;color:inherit}
+  .rail .bar{width:24px;height:1px;background:currentColor;opacity:.5;transition:width .3s var(--ease),opacity .3s}
+  .rail .lab{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:0;transform:translateX(6px);transition:.3s}
+  .rail button:hover .bar,.rail button.active .bar{width:42px;opacity:1}
+  .rail button:hover .lab,.rail button.active .lab{opacity:.85;transform:none}
+
+  /* ───────── Motion entrance states (only when JS is on) ───────── */
+  .js .reveal-lines .line > span{transform:translateY(118%) skewY(3.5deg);transform-origin:left center;transition:transform 1.2s var(--ease)}
+  .js .reveal-lines .line:nth-child(2) > span{transition-delay:.1s}
+  .js .reveal-lines .line:nth-child(3) > span{transition-delay:.2s}
+  .js .reveal-lines.revealed .line > span{transform:translateY(0) skewY(0deg)}
+  .js [data-reveal]{opacity:0}
+
+  /* door reveal — GPU-cheap cover panel that retracts (clip-path stuttered on big images) */
+  .js .door::after{content:"";position:absolute;inset:0;z-index:5;background:var(--paper);transform-origin:bottom;will-change:transform;transition:transform 1.05s var(--ease);pointer-events:none}
+  .js .door.is-in::after{transform:scaleY(0)}
+  .js .door-grid .door:nth-child(2)::after{transition-delay:.12s}
+
+  /* ───────── Responsive ───────── */
+  @media (max-width:1000px){
+    .about{padding-top:120px;min-height:0}
+    .about__grid{padding-bottom:96px;gap:34px}
+    .about__head{font-size:clamp(40px,9vw,82px)}
+    .about__body{justify-self:start;max-width:54ch}
+    .about__topline{flex-direction:column;gap:6px}
+    .closing{grid-template-columns:1fr;gap:40px}
+    .rail{display:none}
+    /* portrait scatter → tidy two-column, no big offsets */
+    .plate-grid{grid-template-columns:1fr 1fr;gap:clamp(18px,4vw,30px)}
+    .plate.p1,.plate.p2,.plate.p3,.plate.p4,.plate.p5{grid-column:auto;margin-top:0}
+    .plate.p2,.plate.p4{margin-top:8vh}
+    .portraits__head{flex-direction:column;align-items:flex-start}
+    .portraits__head .note{text-align:left}
+  }
+  @media (max-width:680px){
+    .mast{padding:16px 18px}
     .mast .right{
-      display:none;
-      position:absolute;top:calc(100% + 6px);right:12px;
-      flex-direction:column;align-items:flex-end;gap:14px;
-      padding:18px 22px;border-radius:18px;
-      font-size:11px;letter-spacing:.22em;
+      display:none;position:absolute;top:calc(100% + 8px);right:18px;
+      flex-direction:column;align-items:flex-end;gap:18px;padding:22px 26px;
+      background:rgba(14,12,11,.92);color:var(--paper);border-radius:14px;
+      backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
     }
     .mast.menu-open .right{display:flex}
-    .mast .right a{white-space:nowrap}
-    /* Touch users swipe; the bouncing chevron + label collides with the CTA on phones */
-    .scroll-hint{display:none}
-    /* CTA pill — shrink a notch */
-    .cover .cta .open{padding:11px 18px;gap:10px}
-    .cover .text{padding:24px 18px 28px}
-    /* Gallery head: only the roman numeral + close on tiny screens */
-    .gallery .head{padding:18px 16px 14px;gap:12px}
-    .gallery .head .left .title{display:none}
-    .gallery .head .left .n{font-size:22px}
-    /* Close ✕ — pinned to the right edge so the dots/foot can't push it off-screen */
-    .gallery .head{position:relative}
-    .gallery .head .right{position:absolute;right:16px;top:50%;transform:translateY(-50%)}
-    .gallery .head .close{width:36px;height:36px;font-size:14px}
-    /* Foot: drop the dot rail on tiny screens (stories with 9–10 photos overflow horizontally) */
-    .gallery .foot{padding:14px 16px 20px}
-    .gallery .foot .place{display:none}
-    .gallery .foot .dots{display:none}
-    .gallery .foot .counter{font-size:22px}
+    .mast .menu-toggle{display:block}
+    .hero__foot{padding:0 18px 32px}
+    .hero__cue{display:none}
+    .about,.portraits,.doors,.closing,.copy{padding-left:18px;padding-right:18px}
+    .door-grid{grid-template-columns:1fr;gap:16px}
+    .plate-grid{grid-template-columns:1fr;gap:28px}
+    .plate.p2,.plate.p4{margin-top:0}
+    .plate__img img{filter:grayscale(0) contrast(1)} /* no hover on touch → show in colour where it exists */
+    .plate.bw .plate__img img{filter:grayscale(1) contrast(1.04)} /* keep the genuinely-B&W ones mono */
+    .copy{justify-content:flex-start;gap:6px 20px}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important}
+    .js .reveal-lines .line > span{transform:none!important}
+    .js [data-reveal]{opacity:1!important}
+    .js .door::after{display:none!important}
+    html{scroll-behavior:auto}
   }
 </style>
 </head>
 <body>
+<div class="grain" aria-hidden="true"></div>
 
-<header class="mast">
+<header class="mast over" id="mast">
   <a href="index.html" class="wordmark">Szabina</a>
-  <button class="menu-toggle" aria-label="Menu" aria-expanded="false">
-    <span></span><span></span><span></span>
-  </button>
-  <div class="right small-caps">
-    <a href="Szabina.html">About</a>
+  <button class="menu-toggle" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
+  <nav class="right">
+    <a href="#about">About</a>
     <a href="Travel.html">Travel</a>
     <a href="Portrait.html">Portrait</a>
     <a href="https://instagram.com/szabina.bks" target="_blank" rel="noopener">@szabina.bks ↗</a>
-  </div>
+  </nav>
 </header>
 
-<main class="hero">
-  <article class="cover" id="cover">
-    <div class="photo" id="photo-a"></div>
-    <div class="photo" id="photo-b"></div>
-    <div class="veil"></div>
-    <div class="veil-left"></div>
-    <div class="text">
-      <div class="meta">
-        <div class="row">
-          <span class="num" id="meta-num"></span>
-          <span class="dot"></span>
-          <span class="small-caps" id="meta-place"></span>
-          <span class="dot"></span>
-          <span class="small-caps" id="meta-date"></span>
-        </div>
-        <h2 id="meta-title"></h2>
-        <p id="meta-caption"></p>
-      </div>
-      <div class="cta">
-        <button class="open" id="open-btn">
-          <span id="open-label">View story</span>
-          <span class="arrow">→</span>
-        </button>
-      </div>
-    </div>
-  </article>
-
-  <button class="scroll-hint" id="scroll-hint" aria-label="Next story">
-    <span class="lbl">Scroll</span>
-    <svg viewBox="0 0 14 20" fill="none" aria-hidden="true">
-      <path d="M7 0V18M7 18L1 12M7 18L13 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </button>
-
-  <div class="progress" id="progress">
-    <span id="prog-cur">01</span>
-    <span class="line"></span>
-    <span id="prog-tot">12</span>
+<!-- ───────── 1 · HERO ───────── -->
+<section class="hero" id="top" data-rail="Index">
+  <canvas id="hero-gl" class="hero__gl" aria-hidden="true"></canvas>
+  <div class="hero__media" id="hero-media" style="background-image:url('hero.jpg')"></div>
+  <div class="hero__veil"></div>
+  <div class="hero__foot" id="hero-foot">
+    <span class="hero__kicker small-caps">Visual diary · Travel &amp; self-portrait</span>
+    <h1 class="hero__name" aria-label="Szabina">
+      <span class="ch"><span>S</span></span><span class="ch"><span>z</span></span><span class="ch"><span>a</span></span><span class="ch"><span>b</span></span><span class="ch"><span>i</span></span><span class="ch"><span>n</span></span><span class="ch"><span>a</span></span>
+    </h1>
+    <p class="hero__sub"><span class="ln"></span> a field journal</p>
   </div>
-</main>
+  <div class="hero__cue"><span class="lbl">Scroll</span><span class="bar"></span></div>
+</section>
 
-<section class="gallery" id="gallery">
-  <div class="head">
-    <div class="left">
-      <span class="n" id="g-num"></span>
-      <span class="title" id="g-title"></span>
+<!-- ───────── 2 · ABOUT (her verbatim copy) ───────── -->
+<section class="about" id="about" data-rail="About">
+  <div class="about__grid">
+    <div class="about__topline">
+      <span class="about__eyebrow small-caps" data-reveal>About</span>
+      <span class="about__index small-caps" data-reveal>Szabina B. — Netherlands — MMXXVI</span>
     </div>
-    <div class="center small-caps" id="g-meta"></div>
-    <div class="right">
-      <button class="close" id="close-btn" aria-label="Close">✕</button>
+    <h2 class="about__head reveal-lines">
+      <span class="line"><span>Earth is diverse,</span></span>
+      <span class="line"><span>art is <em class="tone">diverse</em>.</span></span>
+      <span class="line"><span>And so am I.</span></span>
+    </h2>
+    <div class="about__body">
+      <p class="lede" data-reveal>I invite you to my visual diary, where I share the places, moments, and stories that inspire me, while tracing the emotions that leave their mark. This space is a collection of fragments — memories, moods, and self-reflections seen through my lens.</p>
+      <p class="body" data-reveal>I’m constantly evolving, and so is this collection. Each image is a small piece of that process. Thank you for being part of the journey.</p>
+      <div class="sig" data-reveal>— Szabina<span class="amp">.</span></div>
     </div>
-  </div>
-  <div class="slider" id="slider">
-    <div class="track" id="track"></div>
-    <div class="edge edge-left hidden"></div>
-    <div class="edge edge-right"></div>
-  </div>
-  <div class="foot">
-    <div class="left-group">
-      <div class="nav-arrows">
-        <button class="arrow-btn prev" id="g-prev" aria-label="Previous">←</button>
-        <button class="arrow-btn next" id="g-next" aria-label="Next">→</button>
-      </div>
-      <div class="dots" id="g-dots"></div>
-    </div>
-    <div class="counter"><span class="cur" id="g-cur">1</span><span class="of">/</span><span class="tot" id="g-tot"></span></div>
-    <div class="place" id="g-place"></div>
   </div>
 </section>
 
+<!-- ───────── 3 · PORTRAITS IN MOTION ───────── -->
+<section class="portraits" id="portraits" data-rail="Portraits">
+  <div class="portraits__head">
+    <h3 class="reveal-lines">
+      <span class="line"><span>Self-portrait, <em>mostly</em>.</span></span>
+    </h3>
+    <p class="note" data-reveal>A face, some fabric, the weather. A few selves caught between travels — hover to let the colour back in.</p>
+  </div>
+
+  <div class="plates">
+    <div class="plate-grid">
+      <figure class="plate p1 tall bw" data-speed="-1.4" data-tilt>
+        <div class="plate__img"><img src="images/p05/1.jpg" alt="Self-portrait — a quiet afternoon" loading="lazy"></div>
+        <figcaption class="plate__cap"><span class="n">IV</span><span class="ttl">A quiet <em>afternoon</em></span><span class="pl small-caps">In white</span></figcaption>
+      </figure>
+
+      <figure class="plate p2 tall" data-speed="2.2" data-tilt>
+        <div class="plate__img"><img src="images/p02/6.jpg" alt="Self-portrait — behind the red" loading="lazy"></div>
+        <figcaption class="plate__cap"><span class="n">II</span><span class="ttl">Behind the <em>red</em></span><span class="pl small-caps">In red</span></figcaption>
+      </figure>
+
+      <figure class="plate p3 wide" data-speed="-2.0" data-tilt>
+        <div class="plate__img"><img src="images/p03/1.jpg" alt="Self-portrait — in the dunes" loading="lazy"></div>
+        <figcaption class="plate__cap"><span class="n">III</span><span class="ttl">In <em>the dunes</em></span><span class="pl small-caps">Loonse en Drunense</span></figcaption>
+      </figure>
+
+      <figure class="plate p4 wide" data-speed="1.4" data-tilt>
+        <div class="plate__img"><img src="images/p01/1.jpg" alt="Self-portrait — romance with my donut" loading="lazy"></div>
+        <figcaption class="plate__cap"><span class="n">I</span><span class="ttl">Romance with my <em>donut</em></span><span class="pl small-caps">Donut day</span></figcaption>
+      </figure>    </div>
+  </div>
+</section>
+
+<!-- ───────── 5 · DOORWAYS ───────── -->
+<section class="doors" id="doors" data-rail="Galleries">
+  <div class="doors__lead">
+    <span class="small-caps" data-reveal>Two ways in</span>
+    <h3 data-reveal>The <em>field journal</em>, and the self.</h3>
+  </div>
+  <div class="door-grid">
+    <a href="Travel.html" class="door">
+      <div class="door__photo" style="background-image:url('images/s01/1.webp')"></div>
+      <div class="door__veil"></div>
+      <div class="door__text">
+        <span class="door__title">Travel</span>
+        <span class="door__meta small-caps">Field notes from the road <span class="arrow">→</span></span>
+      </div>
+    </a>
+    <a href="Portrait.html" class="door">
+      <div class="door__photo" style="background-image:url('category-portrait.jpg')"></div>
+      <div class="door__veil"></div>
+      <div class="door__text">
+        <span class="door__title">Portrait</span>
+        <span class="door__meta small-caps">Mostly herself, in black &amp; white <span class="arrow">→</span></span>
+      </div>
+    </a>
+  </div>
+</section>
+
+<!-- ───────── 6 · CLOSING ───────── -->
+<section class="closing" id="end" data-rail="End">
+  <div class="closing__end reveal-lines">
+    <span class="line"><span>Thank you for</span></span>
+    <span class="line"><span>being part of <em>it</em>.</span></span>
+  </div>
+  <div class="closing__right">
+    <p data-reveal>The collection keeps changing — new places, new frames, new selves. Come back when you like.</p>
+    <a class="closing__ig" href="https://instagram.com/szabina.bks" target="_blank" rel="noopener" data-reveal>@szabina.bks <span>↗</span></a>
+  </div>
+</section>
+
+<footer class="copy small-caps">
+  <span>Szabina B.</span>
+  <span>Site by <a href="https://noxta.studio" target="_blank" rel="noopener">noxta.studio</a></span>
+  <span>Netherlands</span>
+</footer>
+
+<!-- section index rail (desktop) -->
+<nav class="rail" id="rail" aria-label="Section index"></nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-  // ─── Story data ─────────────────────────────────────────────────────
-  const STORIES = [
-    {
-      id:"s01", num:"I",
-      cover:1, count:8, date:"19 · VII · 25",
-      place:"Monument Valley · Utah · Arizona",
-      title:["The highway that wouldn&rsquo;t", "<em>stop running</em>."],
-      caption:"A sandstone spire holds the last of the day. The road that brought me here was named, in the end, by a man who simply would not stop running &mdash; and I understood him better than I expected to.",
-      shortPlace:"Monument Valley"
-    },
-    {
-      id:"s02", num:"II",
-      cover:1, count:9, date:"20 · VII · 25",
-      place:"Death Valley · California",
-      title:["Below the sea,", "<em>above</em> the sky."],
-      caption:"This place earned its name. Below sea level, above the clouds, nothing in between except the heat and a few honest thoughts about endings.",
-      shortPlace:"Death Valley"
-    },
-    {
-      id:"s03", num:"III",
-      cover:1, count:8, date:"21 · VII · 25",
-      place:"Vermilion Cliffs · Arizona",
-      title:["Please never", "<em>find me</em>."],
-      caption:"I&rsquo;m going to hide somewhere in Arizona. There are folds in the red rock big enough to lose a life inside of, and most days that sounds like an offer worth considering.",
-      shortPlace:"Arizona"
-    },
-    {
-      id:"s04", num:"IV",
-      cover:1, count:8, date:"22 · VII · 25",
-      place:"Grand Canyon · South Kaibab Trail",
-      title:["The <em>biggest</em>", "of all."],
-      caption:"No photograph survives this place. You stand at the rim and the scale rearranges your idea of what a hole in the earth can be.",
-      shortPlace:"Grand Canyon"
-    },
-    {
-      id:"s05", num:"V",
-      cover:1, count:9, date:"23 · VII · 25",
-      place:"Upper Antelope Canyon · Page, AZ",
-      title:["Is <em>this</em>", "even real."],
-      caption:"The walls move like fabric. The light arrives once a day and the rest is patience. Solo&#8209;traveller souls share looks and ask nothing.",
-      shortPlace:"Antelope Canyon"
-    },
-    {
-      id:"s06", num:"VI",
-      cover:1, count:9, date:"25 · VII · 25",
-      place:"Zion Canyon · Utah",
-      title:["On the way to", "<em>Angels Landing</em>."],
-      caption:"Nature never disappoints, at least not in Utah. The trail folds itself into the cliff like a question being asked over and over, and the answer is &mdash; keep climbing.",
-      shortPlace:"Zion"
-    },
-    {
-      id:"s07", num:"VII",
-      cover:1, count:6, date:"27 · VII · 25",
-      place:"Sequoia National Park · California",
-      title:["Twenty&#8209;nine, beside", "<em>two thousand</em>."],
-      caption:"Twenty-nine years doesn&rsquo;t feel like a lot when you&rsquo;re standing next to ladies who were here for two thousand. The forest does not console you so much as quietly correct your sense of proportion.",
-      shortPlace:"Sequoia"
-    },
-    {
-      id:"s08", num:"VIII",
-      cover:1, count:3, date:"30 · VII · 25",
-      place:"Horseshoe Bend · 04:30",
-      title:["Could not", "<em>sleep</em>."],
-      caption:"4:30 AM, could not sleep. 5:21 AM, no sun today. 5:25 AM, sun left the chat. A short obituary for a morning that almost happened.",
-      shortPlace:"Sleep?"
-    },
-    {
-      id:"s09", num:"IX",
-      cover:1, count:3, date:"01 · VIII · 25",
-      place:"Sequoia, again · California",
-      title:["A random", "<em>blessing</em>."],
-      caption:"A random blessing on the way out of the woods. Love ya, golden hour. We&rsquo;ll meet again, probably when I&rsquo;ve given up on you.",
-      shortPlace:"Golden hour"
-    },
-    {
-      id:"s10", num:"X",
-      cover:1, count:10, date:"02 · VIII · 25",
-      place:"Vernal &amp; Nevada Falls · Yosemite",
-      title:["Memorial Day,", "<em>Mist Trail</em>."],
-      caption:"The Memorial Day crowd got me. The bears did not. Halfway up I forgot what I was here for and let the spray decide.",
-      shortPlace:"Yosemite"
-    },
-    {
-      id:"s11", num:"XI",
-      cover:1, count:6, date:"03 · VIII · 25",
-      place:"MXGP of Flanders · Lommelwood, BE",
-      title:["My favorite", "<em>energy</em>."],
-      caption:"Welcome to Lommelwood. Two-stroke, four-stroke, sunburn, beer, the kind of cheering you feel through your shoes. A reminder that beauty doesn&rsquo;t have to be quiet to be holy.",
-      shortPlace:"Lommelwood"
-    },
-    {
-      id:"s12", num:"XII",
-      cover:1, count:9, date:"05 · VIII · 25",
-      place:"Santa Monica Pier · California",
-      title:["Pacific Park,", "<em>no one</em> awake."],
-      caption:"Early morning, no crowd. Fresh air and a rising sun at one of the most iconic spots in the world. Briefly, the carousel was mine.",
-      shortPlace:"Santa Monica"
-    },
-  ];
+(function(){
+  document.documentElement.classList.add('js');
+  var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var TOUCH = matchMedia('(hover: none)').matches;
+  var hasGSAP = typeof gsap !== 'undefined';
 
-  // ─── Random order, VII pinned first ─────────────────────────────────
-  const PIN_ID = 's07';
-  function shuffle(arr) {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }
-  const pinned = STORIES.find(s => s.id === PIN_ID);
-  const order = [pinned, ...shuffle(STORIES.filter(s => s.id !== PIN_ID))];
-
-  let storyIdx = 0;
-
-  // ─── Cover render ───────────────────────────────────────────────────
-  const cover = document.getElementById('cover');
-  const photoLayers = [document.getElementById('photo-a'), document.getElementById('photo-b')];
-  let activeLayerIdx = 0;
-  let isTransitioning = false;
-
-  const metaNum = document.getElementById('meta-num');
-  const metaPlace = document.getElementById('meta-place');
-  const metaDate = document.getElementById('meta-date');
-  const metaTitle = document.getElementById('meta-title');
-  const metaCaption = document.getElementById('meta-caption');
-  const openLabel = document.getElementById('open-label');
-  const progCur = document.getElementById('prog-cur');
-  const progTot = document.getElementById('prog-tot');
-  progTot.textContent = String(order.length).padStart(2, '0');
-
-  const EXIT_MS  = 880;    // wait for text wipe + photo slide to mostly complete before swap
-  const ENTER_MS = 960;    // mask + slide back in
-  const LOCK_MS  = EXIT_MS + ENTER_MS + 100;
-
-  function applyCoverContent(story) {
-    metaNum.textContent = story.num;
-    metaPlace.innerHTML = story.place;
-    metaDate.innerHTML = story.date;
-    // Title — each line gets its own mask + staggered --i (controls transition-delay)
-    metaTitle.innerHTML = `
-      <span class="l-mask"><span class="l-inner" style="--i:0">${story.title[0]}</span></span>
-      <span class="l-mask"><span class="l-inner" style="--i:1">${story.title[1]}</span></span>`;
-    // Caption — single mask line, comes in after the title lines
-    metaCaption.innerHTML = `<span class="l-mask"><span class="l-inner" style="--i:2">${story.caption}</span></span>`;
-    openLabel.textContent = `View story · ${story.count} pictures`;
-    progCur.textContent = String(storyIdx + 1).padStart(2, '0');
-  }
-
-  const PHOTO_EASE = 'cubic-bezier(.5, 0, .18, 1)';
-  const PHOTO_MS   = 1200;
-
-  function renderCover(story, immediate, direction) {
-    if (immediate) {
-      const p = photoLayers[activeLayerIdx];
-      p.style.backgroundImage = `url('images/${story.id}/${story.cover}.webp')`;
-      p.style.transform = 'translateY(0)';
-      p.style.opacity = '';
-      p.classList.add('on');
-      applyCoverContent(story);
-      preloadNeighbors();
-      return;
-    }
-
-    isTransitioning = true;
-    const dir = direction === 'prev' ? 'prev' : 'next';
-    const isNext = dir === 'next';
-    const outClass  = 't-out-'  + dir;
-    const prepClass = 't-in-prep-' + dir;
-    const oldPhoto = photoLayers[activeLayerIdx];
-    const newPhoto = photoLayers[1 - activeLayerIdx];
-
-    cover.classList.add(outClass);
-
-    const imgUrl = `images/${story.id}/${story.cover}.webp`;
-
-    const runPhotoSlide = () => {
-      // Set new photo's background and park it off-screen on the incoming side
-      newPhoto.style.backgroundImage = `url('${imgUrl}')`;
-      newPhoto.style.transition = 'none';
-      newPhoto.style.transform  = `translateY(${isNext ? '100%' : '-100%'})`;
-      newPhoto.style.opacity    = '1';
-      newPhoto.classList.add('on');
-      void newPhoto.offsetHeight; // flush
-
-      // Animate both photos — new slides into place, old slides out the opposite side
-      newPhoto.style.transition = `transform ${PHOTO_MS}ms ${PHOTO_EASE}`;
-      newPhoto.style.transform  = 'translateY(0)';
-      oldPhoto.style.transition = `transform ${PHOTO_MS}ms ${PHOTO_EASE}`;
-      oldPhoto.style.transform  = `translateY(${isNext ? '-100%' : '100%'})`;
-    };
-
-    const probe = new Image();
-    let started = false;
-    const fire = () => { if (!started) { started = true; runPhotoSlide(); } };
-    probe.onload = probe.onerror = fire;
-    probe.src = imgUrl;
-    if (probe.complete && probe.naturalWidth > 0) fire();
-
-    // Phase 2 — at EXIT_MS, swap text content and prep enter position
-    setTimeout(() => {
-      applyCoverContent(story);
-      cover.classList.remove(outClass);
-      cover.classList.add(prepClass);
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        cover.classList.remove(prepClass);
-      }));
-      preloadNeighbors();
-    }, EXIT_MS);
-
-    // Phase 3 — reset the now-offscreen old photo and unlock
-    setTimeout(() => {
-      oldPhoto.classList.remove('on');
-      oldPhoto.style.transition = 'none';
-      oldPhoto.style.transform  = 'translateY(0)';
-      oldPhoto.style.opacity    = '0';
-      activeLayerIdx = 1 - activeLayerIdx;
-      isTransitioning = false;
-    }, LOCK_MS);
-  }
-
-  function preloadNeighbors() {
-    const next = order[(storyIdx + 1) % order.length];
-    const prev = order[(storyIdx - 1 + order.length) % order.length];
-    [next, prev].forEach(s => {
-      const i = new Image();
-      i.src = `images/${s.id}/${s.cover}.webp`;
-    });
-  }
-
-  function goToStory(idx, direction) {
-    if (isTransitioning) return;
-    const len = order.length;
-    const newIdx = ((idx % len) + len) % len;
-    if (newIdx === storyIdx) return;
-    if (!direction) direction = (newIdx > storyIdx) ? 'next' : 'prev';
-    storyIdx = newIdx;
-    renderCover(order[storyIdx], false, direction);
-  }
-
-  document.getElementById('scroll-hint').addEventListener('click', () => goToStory(storyIdx + 1, 'next'));
-  // wordmark is a link to the homepage (index.html)
-
-  // Mobile menu toggle
-  (function setupMobileMenu(){
-    const mast = document.querySelector('.mast');
-    const toggle = mast && mast.querySelector('.menu-toggle');
-    if (!toggle) return;
-    toggle.addEventListener('click', (e) => {
+  // ── Mobile menu ──────────────────────────────────────────────
+  (function(){
+    var mast = document.getElementById('mast');
+    var toggle = mast.querySelector('.menu-toggle');
+    toggle.addEventListener('click', function(e){
       e.stopPropagation();
-      const isOpen = mast.classList.toggle('menu-open');
-      toggle.setAttribute('aria-expanded', String(isOpen));
+      var open = mast.classList.toggle('menu-open');
+      toggle.setAttribute('aria-expanded', String(open));
     });
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.mast')) {
-        mast.classList.remove('menu-open');
-        toggle.setAttribute('aria-expanded', 'false');
-      }
+    document.addEventListener('click', function(e){
+      if(!e.target.closest('.mast')){ mast.classList.remove('menu-open'); toggle.setAttribute('aria-expanded','false'); }
     });
-    mast.querySelectorAll('.right a').forEach(a => a.addEventListener('click', () => {
-      mast.classList.remove('menu-open');
-      toggle.setAttribute('aria-expanded', 'false');
-    }));
+    mast.querySelectorAll('.right a').forEach(function(a){
+      a.addEventListener('click', function(){ mast.classList.remove('menu-open'); toggle.setAttribute('aria-expanded','false'); });
+    });
   })();
 
-  // initial render — VII pinned first
-  // Pull real photo lists from the editable galleries so the homepage viewer
-  // uses actual filenames (not positional 1.webp / 2.jpg…) and correct counts.
-  Promise.all([
-    fetch('data/travel.json').then(r => r.ok ? r.json() : []).catch(() => []),
-    fetch('data/portrait.json').then(r => r.ok ? r.json() : []).catch(() => []),
-  ]).then(([t, p]) => {
-    const byId = {};
-    [...(Array.isArray(t) ? t : []), ...(Array.isArray(p) ? p : [])].forEach(o => {
-      if (o && o.id && Array.isArray(o.images)) byId[o.id] = o;
-    });
-    STORIES.forEach(s => {
-      const j = byId[s.id];
-      if (!j) return;
-      const hidden = new Set(j.hiddenInGallery || []);
-      s.images = j.images.filter(fn => !hidden.has(fn));
-      s.count = s.images.length;
-    });
-    if (order[storyIdx]) openLabel.textContent = `View story · ${order[storyIdx].count} pictures`;
+  // ── Build the section rail ───────────────────────────────────
+  var sections = [].slice.call(document.querySelectorAll('[data-rail]'));
+  var rail = document.getElementById('rail');
+  sections.forEach(function(sec, i){
+    var b = document.createElement('button');
+    b.innerHTML = '<span class="lab">'+sec.getAttribute('data-rail')+'</span><span class="bar"></span>';
+    b.addEventListener('click', function(){ sec.scrollIntoView({behavior: REDUCED?'auto':'smooth', block:'start'}); });
+    rail.appendChild(b);
+    sec._dot = b;
   });
 
-  renderCover(order[0], true);
+  // ── Entrance reveals — CSS transitions toggled by IntersectionObserver.
+  //    Robust: no scroll-timing dependency, works with or without GSAP.
+  //    .reveal-lines → headline line-rise · .plate/.door → clip-path "develop".
+  function markIn(el){ el.classList.add(el.classList.contains('reveal-lines') ? 'revealed' : 'is-in'); }
+  var revealEls = document.querySelectorAll('.reveal-lines, .door');
+  if('IntersectionObserver' in window){
+    var revIO = new IntersectionObserver(function(es){
+      es.forEach(function(en){ if(en.isIntersecting){ markIn(en.target); revIO.unobserve(en.target); } });
+    }, {threshold:0.16});
+    revealEls.forEach(function(el){ revIO.observe(el); });
+  } else {
+    revealEls.forEach(markIn);
+  }
 
-  // ─── Wheel navigation (one story per gesture, vertical) ─────────────
-  (function setupWheelNav(){
-    const QUIET_MS = 220;
-    let gestureActive = false;
-    let endTimer;
-    window.addEventListener('wheel', (e) => {
-      if (Math.abs(e.deltaY) < 5) return;
-      if (document.body.classList.contains('gallery-open')) return; // gallery has its own scroll
-      e.preventDefault();
-      clearTimeout(endTimer);
-      endTimer = setTimeout(() => { gestureActive = false; }, QUIET_MS);
-      if (gestureActive || isTransitioning) return;
-      gestureActive = true;
-      if (e.deltaY > 0) goToStory(storyIdx + 1, 'next');
-      else              goToStory(storyIdx - 1, 'prev');
-    }, { passive: false });
-  })();
-
-  // ─── Touch swipe (mobile) ───────────────────────────────────────────
-  (function setupTouchNav(){
-    let startY = 0;
-    let active = false;
-    window.addEventListener('touchstart', (e) => {
-      if (document.body.classList.contains('gallery-open')) return;
-      startY = e.touches[0].clientY;
-      active = true;
-    }, { passive: true });
-    window.addEventListener('touchend', (e) => {
-      if (!active) return;
-      active = false;
-      const endY = (e.changedTouches[0] || {}).clientY ?? startY;
-      const delta = startY - endY;
-      if (Math.abs(delta) < 60) return;
-      if (isTransitioning) return;
-      if (delta > 0) goToStory(storyIdx + 1, 'next');
-      else           goToStory(storyIdx - 1, 'prev');
-    }, { passive: true });
-  })();
-
-  // ─── Gallery (horizontal slider) ────────────────────────────────────
-  const gallery = document.getElementById('gallery');
-  const track = document.getElementById('track');
-  const gPrev = document.getElementById('g-prev');
-  const gNext = document.getElementById('g-next');
-  const gDots = document.getElementById('g-dots');
-  const gCur = document.getElementById('g-cur');
-  const gTot = document.getElementById('g-tot');
-  const gNum = document.getElementById('g-num');
-  const gTitle = document.getElementById('g-title');
-  const gMeta = document.getElementById('g-meta');
-  const gPlace = document.getElementById('g-place');
-  const edgeLeft = gallery.querySelector('.edge-left');
-  const edgeRight = gallery.querySelector('.edge-right');
-
-  let curSlide = 0;
-  let totalSlides = 0;
-
-  // ── Full-size quick-view lightbox ──
-  const openLightbox = (() => {
-    let urls = [], i = 0;
-    const lb = document.createElement('div');
-    lb.className = 'lightbox';
-    lb.innerHTML = '<button class="lb-close" aria-label="Close">✕</button>'
-      + '<button class="lb-prev" aria-label="Previous">←</button>'
-      + '<img alt="">'
-      + '<button class="lb-next" aria-label="Next">→</button>'
-      + '<div class="lb-count"></div><div class="lb-mark">@szabina.bks</div>';
-    document.body.appendChild(lb);
-    const lbImg = lb.querySelector('img');
-    const lbCount = lb.querySelector('.lb-count');
-    function render() {
-      const url = urls[i];
-      let tries = 0;
-      lbImg.onerror = () => { if (tries++ >= 5) { lbImg.onerror = null; return; } setTimeout(() => { lbImg.src = url + '?retry=' + tries; }, 1500 * tries); };
-      lbImg.src = url;
-      lbCount.textContent = (i + 1) + ' / ' + urls.length;
-      const vis = urls.length > 1 ? 'visible' : 'hidden';
-      lb.querySelector('.lb-prev').style.visibility = vis;
-      lb.querySelector('.lb-next').style.visibility = vis;
+  // ── Fallback (no GSAP / reduced motion): just reveal everything ──
+  if(!hasGSAP || REDUCED){
+    document.querySelectorAll('.reveal-lines .line > span').forEach(function(s){ s.style.transform='none'; });
+    document.querySelectorAll('[data-reveal]').forEach(function(s){ s.style.opacity='1'; });
+    // rail active state via IntersectionObserver
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(es){
+        es.forEach(function(en){ if(en.isIntersecting){ sections.forEach(function(s){ s._dot.classList.toggle('active', s===en.target); }); } });
+      },{rootMargin:'-45% 0px -45% 0px'});
+      sections.forEach(function(s){ io.observe(s); });
     }
-    function move(d) { i = (i + d + urls.length) % urls.length; render(); }
-    function close() { lb.classList.remove('open'); document.body.style.overflow = ''; }
-    lb.querySelector('.lb-close').addEventListener('click', close);
-    lb.querySelector('.lb-prev').addEventListener('click', e => { e.stopPropagation(); move(-1); });
-    lb.querySelector('.lb-next').addEventListener('click', e => { e.stopPropagation(); move(1); });
-    lb.addEventListener('click', e => { if (e.target === lb) close(); });
-    document.addEventListener('keydown', e => {
-      if (!lb.classList.contains('open')) return;
-      if (e.key === 'Escape') { close(); e.stopImmediatePropagation(); }
-      else if (e.key === 'ArrowLeft') { move(-1); e.stopImmediatePropagation(); }
-      else if (e.key === 'ArrowRight') { move(1); e.stopImmediatePropagation(); }
-    });
-    return (list, start) => { urls = list; i = start || 0; render(); lb.classList.add('open'); document.body.style.overflow = 'hidden'; };
-  })();
+    return;
+  }
 
-  function openGallery() {
-    const s = order[storyIdx];
-    gNum.textContent = s.num;
-    gTitle.innerHTML = `${s.title[0].replace(/<[^>]+>/g,'')} ${s.title[1].replace(/<[^>]+>/g,'')}`;
-    gMeta.innerHTML = `${s.place} &nbsp;·&nbsp; ${s.date}`;
-    gPlace.textContent = s.shortPlace;
-    gTot.textContent = s.count;
+  gsap.registerPlugin(ScrollTrigger);
 
-    track.innerHTML = '';
-    gDots.innerHTML = '';
-    const urls = [];
-    for (let n = 1; n <= s.count; n++) {
-      const slide = document.createElement('div');
-      slide.className = 'slide';
-      const file = (s.images && s.images[n - 1]) || `${n}.${n === 1 ? 'webp' : 'jpg'}`;
-      const url = `images/${s.id}/${file}`;
-      urls.push(url);
-      slide.innerHTML = `<div class="frame"><img alt="${s.shortPlace} ${n}"></div>`;
-      const img = slide.querySelector('img');
-      // Retry transient GitHub Pages 503s on freshly-uploaded photos.
-      let tries = 0;
-      img.onerror = () => { if (tries++ >= 5) { img.onerror = null; return; } setTimeout(() => { img.src = url + '?retry=' + tries; }, 1500 * tries); };
-      img.src = url;
-      const at = n - 1;
-      slide.addEventListener('click', () => openLightbox(urls, at));
-      track.appendChild(slide);
-      const dot = document.createElement('button');
-      dot.className = 'dot' + (n === 1 ? ' active' : '');
-      dot.dataset.go = n - 1;
-      dot.setAttribute('aria-label', `Image ${n}`);
-      dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.go, 10)));
-      gDots.appendChild(dot);
+  // ── Hero — name letters rise on load, kicker/sub fade ────────
+  var tl = gsap.timeline({defaults:{ease:'power4.out'}});
+  tl.from('.hero__kicker', {y:18, autoAlpha:0, duration:.9}, .15)
+    .from('.hero__name .ch > span', {yPercent:118, duration:1.15, stagger:.05}, '<.05')
+    .from('.hero__sub', {y:20, autoAlpha:0, duration:1}, '-=.7')
+    .from('.hero__sub .ln', {scaleX:0, transformOrigin:'left', duration:.9}, '<')
+    .from('.hero__cue', {autoAlpha:0, duration:1}, '<');
+
+  // Hero parallax on scroll
+  gsap.to('#hero-media, #hero-gl', {yPercent:16, scale:1.14, ease:'none',
+    scrollTrigger:{trigger:'.hero', start:'top top', end:'bottom top', scrub:true}});
+  gsap.to('#hero-foot', {yPercent:-34, autoAlpha:0, ease:'none',
+    scrollTrigger:{trigger:'.hero', start:'top top', end:'bottom 30%', scrub:true}});
+
+  // Mast colour flips light↔dark as the hero leaves
+  var mastEl = document.getElementById('mast');
+  ScrollTrigger.create({trigger:'.hero', start:'bottom 72px', end:'bottom 72px',
+    onEnter:function(){ mastEl.classList.remove('over'); },
+    onLeaveBack:function(){ mastEl.classList.add('over'); }});
+
+  // ── Generic [data-reveal] fades ──────────────────────────────
+  gsap.utils.toArray('[data-reveal]').forEach(function(el){
+    gsap.set(el, {y:52, filter:'blur(12px)'});
+    gsap.to(el, {y:0, filter:'blur(0px)', autoAlpha:1, duration:1.4, ease:'expo.out',
+      scrollTrigger:{trigger:el, start:'top 86%'},
+      onStart:function(){ el.style.opacity=''; }});
+  });
+
+  // ── Portrait plates — depth parallax on scroll ───────────────
+  gsap.utils.toArray('.plate').forEach(function(el){
+    var speed = parseFloat(el.getAttribute('data-speed')||'0');
+    gsap.fromTo(el, {yPercent:speed*3.2}, {yPercent:-speed*3.2, ease:'none',
+      scrollTrigger:{trigger:'.portraits', start:'top bottom', end:'bottom top', scrub:1}});
+  });
+
+  // ── Plates drift toward the cursor, measured from the grid centre ──
+  //    (x/y here compose with the scroll-parallax yPercent above)
+  if (!TOUCH) {
+    var pSection = document.querySelector('.portraits');
+    var pGrid = document.querySelector('.plate-grid');
+    var pPlates = gsap.utils.toArray('.plate');
+    if (pSection && pGrid && pPlates.length) {
+      var drift = pPlates.map(function(p){
+        var depth = Math.abs(parseFloat(p.getAttribute('data-speed') || '1'));
+        return {
+          sx: gsap.quickTo(p, 'x', { duration: 0.7, ease: 'power3' }),
+          sy: gsap.quickTo(p, 'y', { duration: 0.7, ease: 'power3' }),
+          amt: 12 + depth * 6      // deeper plates drift a touch more
+        };
+      });
+      pSection.addEventListener('pointermove', function(e){
+        var r = pGrid.getBoundingClientRect();
+        var nx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 2)));
+        var ny = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 2)));
+        drift.forEach(function(d){ d.sx(nx * d.amt); d.sy(ny * d.amt); });
+      }, { passive: true });
+      pSection.addEventListener('pointerleave', function(){
+        drift.forEach(function(d){ d.sx(0); d.sy(0); });
+      });
     }
-
-    totalSlides = s.count;
-    curSlide = 0;
-    setSlideState(0);
-    // center the first photo (track has 50% inline padding so it can center)
-    const first = track.querySelector('.slide');
-    if (first) first.scrollIntoView({ block: 'nearest', inline: 'center' });
-    updateEdges();
-
-    document.body.classList.add('gallery-open');
   }
 
-  function closeGallery() {
-    document.body.classList.remove('gallery-open');
-  }
-
-  function setSlideState(idx) {
-    idx = Math.max(0, Math.min(totalSlides - 1, idx));
-    curSlide = idx;
-    gCur.textContent = idx + 1;
-    gDots.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
-    gPrev.disabled = idx === 0;
-    gNext.disabled = idx === totalSlides - 1;
-  }
-
-  function updateEdges() {
-    edgeLeft.classList.toggle('hidden', track.scrollLeft <= 4);
-    edgeRight.classList.toggle('hidden', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
-  }
-
-  function nearestSlideIdx() {
-    const slides = [...track.querySelectorAll('.slide')];
-    const center = track.scrollLeft + track.clientWidth / 2;
-    let best = 0, dist = Infinity;
-    slides.forEach((s, i) => {
-      const c = s.offsetLeft + s.offsetWidth / 2;
-      const d = Math.abs(c - center);
-      if (d < dist) { dist = d; best = i; }
+  // ── 3D tilt on pointer (desktop only) ────────────────────────
+  if(!TOUCH){
+    document.querySelectorAll('[data-tilt]').forEach(function(el){
+      var inner = el.classList.contains('about__frame') ? el : (el.querySelector('.plate__img')||el);
+      var qx = gsap.quickTo(inner,'rotationY',{duration:.6,ease:'power3'});
+      var qy = gsap.quickTo(inner,'rotationX',{duration:.6,ease:'power3'});
+      el.addEventListener('pointermove', function(e){
+        var r = el.getBoundingClientRect();
+        var px = (e.clientX - r.left)/r.width - .5;
+        var py = (e.clientY - r.top)/r.height - .5;
+        qx(px*9); qy(-py*9);
+      });
+      el.addEventListener('pointerleave', function(){ qx(0); qy(0); });
+      gsap.set(inner,{transformPerspective:1000});
     });
-    return best;
   }
 
-  function goToSlide(idx) {
-    idx = Math.max(0, Math.min(totalSlides - 1, idx));
-    const slide = track.querySelectorAll('.slide')[idx];
-    if (slide) slide.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
-    setSlideState(idx);
-  }
-
-  gPrev.addEventListener('click', () => goToSlide(curSlide - 1));
-  gNext.addEventListener('click', () => goToSlide(curSlide + 1));
-  let scrollTimer;
-  track.addEventListener('scroll', () => {
-    updateEdges();
-    clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(() => setSlideState(nearestSlideIdx()), 80);
+  // ── Rail active state ────────────────────────────────────────
+  sections.forEach(function(sec){
+    ScrollTrigger.create({trigger:sec, start:'top 50%', end:'bottom 50%',
+      onToggle:function(self){ if(self.isActive){ sections.forEach(function(s){ s._dot.classList.toggle('active', s===sec); }); } }});
   });
 
-  document.getElementById('open-btn').addEventListener('click', openGallery);
-  document.getElementById('close-btn').addEventListener('click', closeGallery);
-
-  // clicking anywhere on the cover (outside the CTA which already handles itself) opens the gallery
-  cover.addEventListener('click', (e) => {
-    if (e.target.closest('.cta')) return;
-    openGallery();
+  // Light onerror retry — covers transient GitHub Pages 503s on any fresh image
+  document.querySelectorAll('img').forEach(function(img){
+    var t=0; img.addEventListener('error', function(){ if(t++>=4) return; var u=img.getAttribute('src'); setTimeout(function(){ img.src=u+(u.indexOf('?')<0?'?':'&')+'r='+t; }, 1200*t); });
   });
-
-  // ─── Keyboard nav ───────────────────────────────────────────────────
-  document.addEventListener('keydown', (e) => {
-    if (document.body.classList.contains('gallery-open')) {
-      if (e.key === 'ArrowRight') goToSlide(curSlide + 1);
-      else if (e.key === 'ArrowLeft') goToSlide(curSlide - 1);
-      else if (e.key === 'Escape') closeGallery();
-    } else {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') goToStory(storyIdx + 1, 'next');
-      else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') goToStory(storyIdx - 1, 'prev');
-      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGallery(); }
-    }
-  });
+})();
 </script>
 <script>
   // Light deterrents against casual image saving (not foolproof — screenshots still work).
-  document.addEventListener('contextmenu', e => {
-    if (e.target.closest('img, .cover .photo, .slider .frame')) e.preventDefault();
-  });
-  document.addEventListener('dragstart', e => {
-    if (e.target.tagName === 'IMG') e.preventDefault();
-  });
+  document.addEventListener('contextmenu', function(e){ if(e.target.closest('img, .hero__media, .door__photo, .plate__img')) e.preventDefault(); });
+  document.addEventListener('dragstart', function(e){ if(e.target.tagName==='IMG') e.preventDefault(); });
+</script>
+<script>
+/* ───── Hero water-ripple cursor effect (ported from "dist 4" — ripple + cursor-drift only) ───── */
+(function heroWater(){
+  if (typeof THREE === 'undefined') return;                            // no Three.js → keep CSS bg
+  if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return; // cursor-only effect (skip touch)
+  var hero = document.querySelector('.hero');
+  var canvas = document.getElementById('hero-gl');
+  if (!hero || !canvas) return;
+
+  var renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false }); }
+  catch (e) { return; }
+  if (!renderer || !renderer.getContext()) return;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+  var VERT = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position,1.0); }';
+  var FRAG = [
+    'precision highp float;',
+    'varying vec2 vUv;',
+    'uniform sampler2D uTex;',
+    'uniform float uAsp;',     // image aspect (w/h)
+    'uniform float uPlane;',   // canvas aspect (w/h)
+    'uniform vec2  uMouse;',   // -0.5..0.5 smoothed
+    'uniform float uTime;',
+    'vec2 coverUV(vec2 uv, float imgAsp, float planeAsp, float focusY){',
+    '  float r = imgAsp/planeAsp; vec2 o = uv;',
+    '  if (r < 1.0){ o.y = (uv.y-0.5)*r + focusY; } else { o.x = (uv.x-0.5)/r + 0.5; }',
+    '  return o;',
+    '}',
+    'void main(){',
+    '  vec2 uv = vUv;',
+    '  vec2 par = uMouse * 0.04;',                                              // drift toward cursor
+    '  vec2 m = uMouse + 0.5;',
+    '  float d = distance(uv, m);',
+    '  float ripple = sin(d*16.0 - uTime*1.6) * 0.0045 * smoothstep(0.6, 0.0, d);', // the water
+    '  vec2 disp = par + ripple;',
+    '  vec2 s = coverUV(uv + disp, uAsp, uPlane, 0.5);',
+    '  vec3 col = texture2D(uTex, s).rgb;',
+    '  float g = dot(col, vec3(0.299, 0.587, 0.114));',                         // monochrome (matches CSS)
+    '  col = vec3(g);',
+    '  col = (col - 0.5) * 1.04 + 0.5;',                                        // contrast 1.04
+    '  col *= 0.92;',                                                          // brightness .92
+    '  gl_FragColor = vec4(col, 1.0);',
+    '}'
+  ].join('\n');
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  var uniforms = {
+    uTex:   { value: null },
+    uAsp:   { value: 1.5 },
+    uPlane: { value: hero.clientWidth / Math.max(1, hero.clientHeight) },
+    uMouse: { value: new THREE.Vector2(0, 0) },
+    uTime:  { value: 0 }
+  };
+  var mat = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: uniforms });
+  scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat));
+
+  function size(){
+    var w = hero.clientWidth, h = Math.max(1, hero.clientHeight);
+    renderer.setSize(w, h, false);
+    uniforms.uPlane.value = w / h;
+  }
+  size();
+
+  new THREE.TextureLoader().load('hero.jpg', function(tex){
+    uniforms.uTex.value = tex;
+    uniforms.uAsp.value = tex.image.width / tex.image.height;
+    document.documentElement.classList.add('has-webgl');   // reveal canvas, hide CSS bg
+  }, undefined, function(){ /* texture failed → CSS bg stays */ });
+
+  var target = { x: 0, y: 0 };
+  window.addEventListener('pointermove', function(e){
+    var r = hero.getBoundingClientRect();
+    target.x = ((e.clientX - r.left) / r.width) - 0.5;
+    target.y = 0.5 - ((e.clientY - r.top) / r.height);
+  }, { passive: true });
+
+  var visible = true;
+  if ('IntersectionObserver' in window){
+    new IntersectionObserver(function(es){ visible = es[0].isIntersecting; }, { threshold: 0 }).observe(hero);
+  }
+
+  var start = performance.now();
+  function render(){
+    uniforms.uTime.value = (performance.now() - start) / 1000;
+    uniforms.uMouse.value.x += (target.x - uniforms.uMouse.value.x) * 0.05;
+    uniforms.uMouse.value.y += (target.y - uniforms.uMouse.value.y) * 0.05;
+    if (visible && uniforms.uTex.value) renderer.render(scene, camera);
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+  window.addEventListener('resize', size);
+})();
 </script>
 </body>
 </html>
