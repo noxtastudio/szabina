@@ -56,8 +56,7 @@
     position:fixed;top:0;left:0;right:0;z-index:100;
     display:flex;justify-content:space-between;align-items:center;
     padding:24px 40px;color:var(--ink);pointer-events:none;
-    background:rgba(247,245,241,0.82);
-    backdrop-filter:blur(10px) saturate(1.05);-webkit-backdrop-filter:blur(10px) saturate(1.05);
+    background:rgba(247,245,241,0.96);
     border-bottom:1px solid rgba(14,12,11,0.06);
     transition:color .5s ease, background .5s ease, border-color .5s ease;
   }
@@ -235,7 +234,7 @@
   .copy a:hover{color:var(--ink)}
 
   /* ───────── Side rail (section index) ───────── */
-  .rail{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:60;display:flex;flex-direction:column;gap:2px;mix-blend-mode:difference;color:#fff}
+  .rail{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:60;display:flex;flex-direction:column;gap:2px;color:var(--muted)}
   .rail button{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:7px 0;color:inherit}
   .rail .bar{width:24px;height:1px;background:currentColor;opacity:.5;transition:width .3s var(--ease),opacity .3s}
   .rail .lab{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:0;transform:translateX(6px);transition:.3s}
@@ -301,8 +300,6 @@
 </style>
 </head>
 <body>
-<div class="grain" aria-hidden="true"></div>
-
 <header class="mast over" id="mast">
   <a href="index.html" class="wordmark">Szabina</a>
   <button class="menu-toggle" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
@@ -518,8 +515,8 @@
 
   // ── Generic [data-reveal] fades ──────────────────────────────
   gsap.utils.toArray('[data-reveal]').forEach(function(el){
-    gsap.set(el, {y:52, filter:'blur(12px)'});
-    gsap.to(el, {y:0, filter:'blur(0px)', autoAlpha:1, duration:1.4, ease:'expo.out',
+    gsap.set(el, {y:52});
+    gsap.to(el, {y:0, autoAlpha:1, duration:1.2, ease:'expo.out',
       scrollTrigger:{trigger:el, start:'top 86%'},
       onStart:function(){ el.style.opacity=''; }});
   });
@@ -605,7 +602,7 @@
   try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false }); }
   catch (e) { return; }
   if (!renderer || !renderer.getContext()) return;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
 
   var VERT = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position,1.0); }';
   var FRAG = [
@@ -675,13 +672,15 @@
     new IntersectionObserver(function(es){ visible = es[0].isIntersecting; }, { threshold: 0 }).observe(hero);
   }
 
-  var start = performance.now();
-  function render(){
-    uniforms.uTime.value = (performance.now() - start) / 1000;
-    uniforms.uMouse.value.x += (target.x - uniforms.uMouse.value.x) * 0.05;
-    uniforms.uMouse.value.y += (target.y - uniforms.uMouse.value.y) * 0.05;
-    if (visible && uniforms.uTex.value) renderer.render(scene, camera);
+  var start = performance.now(), last = 0;
+  function render(now){
     requestAnimationFrame(render);
+    if (now - last < 32) return;            // ~30fps cap — Safari-friendly
+    last = now;
+    uniforms.uTime.value = (performance.now() - start) / 1000;
+    uniforms.uMouse.value.x += (target.x - uniforms.uMouse.value.x) * 0.09;
+    uniforms.uMouse.value.y += (target.y - uniforms.uMouse.value.y) * 0.09;
+    if (visible && uniforms.uTex.value) renderer.render(scene, camera);
   }
   requestAnimationFrame(render);
   window.addEventListener('resize', size);
