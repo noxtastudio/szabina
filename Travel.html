@@ -513,12 +513,17 @@
   (async function init(){
   const STORIES = await fetch("data/travel.json").then(r => r.json());
 
-  // Newest stories first — sort by date "DD · RomanMonth · YY" descending.
+  // Highest story number first — sort by Roman-numeral `num` descending.
   (function(){
-    const RM = {I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8,IX:9,X:10,XI:11,XII:12};
+    const R = {I:1,V:5,X:10,L:50,C:100,D:500,M:1000};
     const key = (s) => {
-      const p = String((s && s.date) || '').split('·').map(x => x.trim());
-      return ((parseInt(p[2],10)||0)*10000) + ((RM[p[1]]||0)*100) + (parseInt(p[0],10)||0);
+      const r = String((s && s.num) || '').toUpperCase().trim();
+      let n = 0;
+      for (let i = 0; i < r.length; i++) {
+        const cur = R[r[i]] || 0, next = R[r[i+1]] || 0;
+        n += cur < next ? -cur : cur;
+      }
+      return n;
     };
     STORIES.sort((a,b) => key(b) - key(a));
   })();
