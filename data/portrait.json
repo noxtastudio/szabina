@@ -1,25 +1,7 @@
 [
   {
-    "id": "p01",
-    "num": "I",
-    "coverExt": "jpg",
-    "cover": 1,
-    "count": 1,
-    "date": "14 · II · 26",
-    "place": "Valentine&rsquo;s Day · at home",
-    "title": [
-      "Romance with",
-      "my <em>donut</em>."
-    ],
-    "caption": "February 14. The pink one got the seat at the table. No regrets, no notes.",
-    "shortPlace": "Donut day",
-    "images": [
-      "1.jpg"
-    ]
-  },
-  {
     "id": "p02",
-    "num": "II",
+    "num": "I",
     "coverExt": "jpg",
     "cover": 1,
     "count": 1,
@@ -37,7 +19,7 @@
   },
   {
     "id": "p03",
-    "num": "III",
+    "num": "II",
     "coverExt": "jpg",
     "cover": 1,
     "count": 1,
@@ -55,7 +37,7 @@
   },
   {
     "id": "p05",
-    "num": "IV",
+    "num": "III",
     "coverExt": "jpg",
     "cover": 2,
     "count": 2,
