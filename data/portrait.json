@@ -67,8 +67,8 @@
     "id": "p05",
     "num": "IV",
     "coverExt": "jpg",
-    "cover": 4,
-    "count": 4,
+    "cover": 2,
+    "count": 2,
     "date": "30 · V · 26",
     "place": "Self‑portrait · garden",
     "title": [
@@ -78,9 +78,7 @@
     "caption": "",
     "shortPlace": "In white",
     "images": [
-      "1.jpg",
       "2-2.jpg",
-      "12.jpg",
       "1-2.jpg"
     ],
     "hiddenInGallery": [
