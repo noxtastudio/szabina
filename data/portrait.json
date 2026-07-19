@@ -18,26 +18,8 @@
     ]
   },
   {
-    "id": "p03",
-    "num": "II",
-    "coverExt": "jpg",
-    "cover": 1,
-    "count": 1,
-    "date": "19 · IV · 26",
-    "place": "Loonse en Drunense Duinen · NL",
-    "title": [
-      "",
-      "<em>Dunes</em>."
-    ],
-    "caption": "",
-    "shortPlace": "In the dunes",
-    "images": [
-      "1.jpg"
-    ]
-  },
-  {
     "id": "p05",
-    "num": "III",
+    "num": "II",
     "coverExt": "jpg",
     "cover": 2,
     "count": 2,
