@@ -356,25 +356,31 @@
 
   <div class="plates">
     <div class="plate-grid">
-      <figure class="plate p1 tall bw" data-speed="-1.4" data-tilt>
-        <div class="plate__img"><img src="images/p05/1.jpg" alt="Self-portrait — a quiet afternoon" loading="lazy"></div>
-        <figcaption class="plate__cap"><span class="n">IV</span><span class="ttl">A quiet <em>afternoon</em></span><span class="pl small-caps">In white</span></figcaption>
+      <!-- Slots carry the art-direction (grid position · parallax speed · aspect).
+           Content is rendered from data/portrait.json at load (see the
+           portrait-plates script near the end of <body>) so the homepage always
+           mirrors Szabina's live Portrait gallery. Slots beyond the story count
+           stay hidden. -->
+      <figure class="plate p1 tall bw" data-speed="-1.4" data-tilt hidden>
+        <div class="plate__img"><img alt="" loading="lazy"></div>
+        <figcaption class="plate__cap"><span class="n"></span><span class="ttl"></span><span class="pl small-caps"></span></figcaption>
       </figure>
 
-      <figure class="plate p2 tall" data-speed="2.2" data-tilt>
-        <div class="plate__img"><img src="images/p02/6.jpg" alt="Self-portrait — behind the red" loading="lazy"></div>
-        <figcaption class="plate__cap"><span class="n">II</span><span class="ttl">Behind the <em>red</em></span><span class="pl small-caps">In red</span></figcaption>
+      <figure class="plate p2 tall" data-speed="2.2" data-tilt hidden>
+        <div class="plate__img"><img alt="" loading="lazy"></div>
+        <figcaption class="plate__cap"><span class="n"></span><span class="ttl"></span><span class="pl small-caps"></span></figcaption>
       </figure>
 
-      <figure class="plate p3 wide" data-speed="-2.0" data-tilt>
-        <div class="plate__img"><img src="images/p03/1.jpg" alt="Self-portrait — in the dunes" loading="lazy"></div>
-        <figcaption class="plate__cap"><span class="n">III</span><span class="ttl">In <em>the dunes</em></span><span class="pl small-caps">Loonse en Drunense</span></figcaption>
+      <figure class="plate p3 wide" data-speed="-2.0" data-tilt hidden>
+        <div class="plate__img"><img alt="" loading="lazy"></div>
+        <figcaption class="plate__cap"><span class="n"></span><span class="ttl"></span><span class="pl small-caps"></span></figcaption>
       </figure>
 
-      <figure class="plate p4 wide" data-speed="1.4" data-tilt>
-        <div class="plate__img"><img src="images/p01/1.jpg" alt="Self-portrait — romance with my donut" loading="lazy"></div>
-        <figcaption class="plate__cap"><span class="n">I</span><span class="ttl">Romance with my <em>donut</em></span><span class="pl small-caps">Donut day</span></figcaption>
-      </figure>    </div>
+      <figure class="plate p4 wide" data-speed="1.4" data-tilt hidden>
+        <div class="plate__img"><img alt="" loading="lazy"></div>
+        <figcaption class="plate__cap"><span class="n"></span><span class="ttl"></span><span class="pl small-caps"></span></figcaption>
+      </figure>
+    </div>
   </div>
 </section>
 
@@ -580,8 +586,114 @@
 
   // Light onerror retry — covers transient GitHub Pages 503s on any fresh image
   document.querySelectorAll('img').forEach(function(img){
+    if(img.closest('.plate-grid')) return; // portrait plates self-manage (validate + fall back + hide)
     var t=0; img.addEventListener('error', function(){ if(t++>=4) return; var u=img.getAttribute('src'); setTimeout(function(){ img.src=u+(u.indexOf('?')<0?'?':'&')+'r='+t; }, 1200*t); });
   });
+})();
+</script>
+<script>
+/* ───── Portrait plates — render from data/portrait.json ─────
+   Self-healing + fail-safe. The plates mirror whatever Szabina keeps in her
+   Portrait gallery, and a plate only appears once one of its photos actually
+   loads — so deleting, renaming, or replacing photos (or whole stories) can
+   never leave a broken or blank tile. Per story we try the cover first (matches
+   Portrait.html: cover = 1-based index into images[], honours hiddenInGallery),
+   then fall back to the story's other photos. A story with no working photo
+   hides its slot; if nothing renders at all, the section collapses.
+   Cap = number of slots in the markup above (currently 4). */
+(function(){
+  var section = document.getElementById('portraits');
+  var slots = [].slice.call(document.querySelectorAll('.plate-grid .plate'));
+  if(!slots.length) return;
+
+  // Ordered image URLs to try for a story: cover first, then the rest as fallbacks.
+  function candidates(s){
+    var list = (s.images && s.images.length)
+      ? s.images.slice()
+      : Array.from({length: s.count || 1}, function(_, i){ return (i+1) + '.' + (i===0 ? (s.coverExt || 'webp') : 'jpg'); });
+    var ci = (s.cover || 1) - 1, ordered = [];
+    if(list[ci]) ordered.push(list[ci]);
+    list.forEach(function(f, i){ if(i !== ci) ordered.push(f); });
+    return ordered.map(function(f){ return 'images/' + s.id + '/' + f; });
+  }
+  // Confirm a URL loads before we ever show it; retry transient 503 (deploy lag). cb(loadedUrl|null).
+  function probe(url, cb){
+    var im = new Image(), tries = 0;
+    im.onload  = function(){ cb(im.naturalWidth > 0 ? im.src : null); };
+    im.onerror = function(){
+      if(tries < 3){ tries++; setTimeout(function(){ im.src = url + (url.indexOf('?')<0?'?':'&') + 'r=' + tries; }, 1200 * tries); }
+      else cb(null);
+    };
+    im.src = url;
+  }
+  function resolve(urls, i, cb){
+    if(i >= urls.length){ cb(null); return; }
+    probe(urls[i], function(ok){ ok ? cb(ok) : resolve(urls, i + 1, cb); });
+  }
+
+  function titleHTML(t){ return Array.isArray(t) ? t.filter(Boolean).join(' ').trim() : (t || '').toString().trim(); }
+  function plainText(html){ var d = document.createElement('div'); d.innerHTML = html; return (d.textContent || '').trim(); }
+  function shortPlace(s){
+    if(s.shortPlace) return s.shortPlace;
+    var p = (s.place || ''), i = p.lastIndexOf('·');   // last "·"
+    return (i >= 0 ? p.slice(i + 1) : p).replace(/&#8209;|‑/g, '-').trim();
+  }
+  // Story number = the numeral shown on the plate (Roman `num`), id number as fallback.
+  function romanToInt(r){
+    var map = {I:1,V:5,X:10,L:50,C:100,D:500,M:1000}, s = String(r||'').toUpperCase().trim(), n = 0, prev = 0;
+    if(!s || /[^IVXLCDM]/.test(s)) return NaN;
+    for(var i = s.length - 1; i >= 0; i--){ var v = map[s[i]]; if(v < prev) n -= v; else { n += v; prev = v; } }
+    return n;
+  }
+  function storyNumber(s){
+    var r = romanToInt(s.num);            if(!isNaN(r) && r > 0) return r;
+    var d = parseInt(s.num, 10);          if(!isNaN(d))          return d;
+    var m = String(s.id || '').match(/\d+/); return m ? parseInt(m[0], 10) : 0;
+  }
+
+  function mount(fig, s, done){
+    resolve(candidates(s), 0, function(url){
+      if(!url){ fig.hidden = true; done(); return; }     // no working photo → no plate (never a broken tile)
+      var ttl = titleHTML(s.title), img = fig.querySelector('img');
+      img.src = url;
+      img.alt = 'Self-portrait — ' + (plainText(ttl) || s.id);
+      var n = fig.querySelector('.n');   if(n)  n.textContent = s.num || '';
+      var t = fig.querySelector('.ttl'); if(t)  t.innerHTML  = ttl;
+      var pl = fig.querySelector('.pl'); if(pl){ var sp = shortPlace(s); pl.textContent = sp; pl.style.display = sp ? '' : 'none'; }
+      fig.hidden = false;
+      done();
+    });
+  }
+
+  function settle(){
+    var anyVisible = slots.some(function(f){ return !f.hidden; });
+    if(section) section.hidden = !anyVisible;              // collapse the whole section if nothing rendered
+    if(window.ScrollTrigger && ScrollTrigger.refresh) ScrollTrigger.refresh();
+  }
+
+  function fill(stories){
+    stories = (Array.isArray(stories) ? stories.slice() : [])
+      .sort(function(a, b){ return storyNumber(b) - storyNumber(a); });  // highest story number on top → lowest on bottom
+    var pending = slots.length;
+    function done(){ if(--pending === 0) settle(); }
+    slots.forEach(function(fig, i){
+      var s = stories[i];
+      if(!s){ fig.hidden = true; done(); return; }         // fewer stories than slots → hide extras
+      mount(fig, s, done);
+    });
+  }
+
+  // Fetch the gallery data; retry transient 503; on permanent failure collapse the section.
+  function load(attempt){
+    fetch('data/portrait.json', {cache:'no-cache'})
+      .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+      .then(fill)
+      .catch(function(){
+        if(attempt < 4) setTimeout(function(){ load(attempt + 1); }, 1200 * (attempt + 1));
+        else settle();   // give up cleanly — no stranded/empty section
+      });
+  }
+  load(0);
 })();
 </script>
 <script>
